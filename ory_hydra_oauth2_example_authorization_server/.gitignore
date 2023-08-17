@@ -1,0 +1,10 @@
+.env
+
+**/ca.key
+**/ca.crt
+**/ca.srl
+
+nginx/cert
+nginx/confs/htpasswd_introspect
+
+authorization-server.com.truststore.p12
