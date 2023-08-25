@@ -16,7 +16,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("password") String password,
             @Param("org_name") String orgName);
 
-    @Procedure("User.getUserByLogin")
-    User getUserByLogin(
-            @Param("login") String login);
 }

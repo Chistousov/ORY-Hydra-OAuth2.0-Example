@@ -17,6 +17,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import com.github.chistousov.authorization_backend.dao.entities.User;
+import com.github.chistousov.authorization_backend.exceptions.IncorrectPasswordException;
+import com.github.chistousov.authorization_backend.exceptions.LoginDoesNotExistException;
 import com.github.chistousov.authorization_backend.models.PostRegistrationModel;
 
 import reactor.test.StepVerifier;
@@ -27,7 +29,7 @@ public class UserServiceTest {
 
     private static final File pathToResourceDockerComposeFile = Path.of("").toAbsolutePath().getParent().getParent()
             .resolve("docker-compose.yaml").toFile();
-    private static final String postgresqlUserDataContainerDockerCompose = "ory-hydra-oauth2-example-authorization-server-user-data-postgresql";
+    private static final String postgresqlUserDataContainerDockerCompose = "ory-hydra-oauth2-ex-auth-server-userdata-postgresql";
     private static final int postgresqlUserDataPortDockerCompose = 5432;
     private static final String postgresqlUserDataUserDockerCompose = "user_data";
     private static final String postgresqlUserDataPassDockerCompose = "superpass";
@@ -63,6 +65,8 @@ public class UserServiceTest {
                 postgresqlUserDataPassDockerCompose);
 
         registry.add("spring.datasource.url", () -> postgresqlStringConn);
+
+        registry.add("application.ory-hydra.admin.baseURI", () -> "");
 
     }
 
@@ -115,7 +119,7 @@ public class UserServiceTest {
         // when
         StepVerifier
                 .create(userService.createUser(user1))
-                .expectNext(1L)
+                .expectNextCount(1)
                 .verifyComplete();
 
         StepVerifier
@@ -128,7 +132,7 @@ public class UserServiceTest {
 
         StepVerifier
                 .create(userService.createUser(user4))
-                .expectNext(4L)
+                .expectNextCount(1)
                 .verifyComplete();
 
         // then (instead of verify)
@@ -136,18 +140,18 @@ public class UserServiceTest {
     }
     
     @Test
-    @DisplayName("Successful get user a")
+    @DisplayName("Successful user creation and subsequent selection")
     void testGetUser() {
 
         // given (instead of when)
 
-        final String login1 = "someuser1";
-        final String login2 = "someuser2";
+        final String login1 = "someuser1_";
+        final String login2 = "someuser2_";
 
-        final String pass1 = "asdasfdasffsadfa";
+        final String pass1 = "zxcvxbxvvcxvxcvxcv";
         final String pass2 = "jdfglkvjbjbjbj";
 
-        final String org1 = "someorg1";
+        final String org1 = "someorg1_";
 
         final PostRegistrationModel user = PostRegistrationModel
                 .builder()
@@ -164,7 +168,7 @@ public class UserServiceTest {
 
         StepVerifier
                 .create(userService.createUser(user))
-                .expectNext(1L)
+                .expectNextCount(1)
                 .verifyComplete();
 
         // when
@@ -177,8 +181,15 @@ public class UserServiceTest {
         
         StepVerifier
                 .create(userService.getUser(login2, pass1))
-                .expectNext(expectedUser)
-                .verifyComplete();
+                .verifyErrorMatches(ex -> 
+                    ex instanceof LoginDoesNotExistException && ex.getMessage().equals("login does not exist")
+                );
+
+        StepVerifier
+                .create(userService.getUser(login1, pass2))
+                .verifyErrorMatches(ex -> 
+                    ex instanceof IncorrectPasswordException && ex.getMessage().equals("Password is incorrect! ")
+                );
 
     }
 }

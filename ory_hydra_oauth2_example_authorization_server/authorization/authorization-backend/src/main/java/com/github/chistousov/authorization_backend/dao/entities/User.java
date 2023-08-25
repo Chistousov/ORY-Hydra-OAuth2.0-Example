@@ -15,15 +15,18 @@ import javax.persistence.*;
         @StoredProcedureParameter(name = "user_id", type = Long.class, mode = ParameterMode.OUT)
 })
 
-@NamedStoredProcedureQuery(name = "User.getUserByLogin", resultClasses = User.class, procedureName = "horns_and_hooves.get_login", parameters = {
-    @StoredProcedureParameter(name = "login", type = String.class, mode = ParameterMode.IN),
-    @StoredProcedureParameter(name = "ref_cursor", type = void.class, mode = ParameterMode.REF_CURSOR)
+@NamedStoredProcedureQuery(name = "User.getUserByLogin", 
+    procedureName = "horns_and_hooves.get_login", 
+    resultClasses = { User.class },
+    parameters = {
+    @StoredProcedureParameter(mode = ParameterMode.REF_CURSOR, type = void.class),
+    @StoredProcedureParameter(mode = ParameterMode.IN, type = String.class)
 })
 
 @NoArgsConstructor
 @Getter
 @Builder
-@EqualsAndHashCode
+@EqualsAndHashCode(exclude = { "id", "password" })
 @AllArgsConstructor
 @Entity
 public class User {

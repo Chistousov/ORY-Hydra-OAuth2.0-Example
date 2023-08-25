@@ -1,7 +1,15 @@
 package com.github.chistousov.authorization_backend.services;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
+import javax.persistence.EntityManager;
+import javax.persistence.ParameterMode;
+import javax.persistence.PersistenceContext;
+import javax.persistence.StoredProcedureQuery;
+
+import org.hibernate.mapping.Any;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -11,6 +19,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.github.chistousov.authorization_backend.dao.entities.User;
 import com.github.chistousov.authorization_backend.dao.repositories.UserRepository;
 import com.github.chistousov.authorization_backend.exceptions.IncorrectPasswordException;
+import com.github.chistousov.authorization_backend.exceptions.LoginDoesNotExistException;
 import com.github.chistousov.authorization_backend.jacoco_ignore.ExcludeFromJacocoGeneratedReport;
 import com.github.chistousov.authorization_backend.models.PostRegistrationModel;
 
@@ -34,6 +43,10 @@ public class UserService {
     private UserRepository userRepository;
 
     private PasswordEncoder passwordEncoder;
+
+    @PersistenceContext
+    EntityManager em;
+
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoderRegister) {
         this.userRepository = userRepository;
@@ -103,7 +116,21 @@ public class UserService {
         
         return Mono.fromCallable(() -> {
             
-            User user = transaction(() -> userRepository.getUserByLogin(login));
+            User user = transaction(() -> {
+                
+                var storedProcedure =  em.createNamedStoredProcedureQuery("User.getUserByLogin");
+                storedProcedure.setParameter(2, login);
+                storedProcedure.execute();
+
+                List<User> users = (List<User>)storedProcedure.getResultList();
+
+                if(!users.isEmpty()){
+                    return users.get(0);
+                } else {
+                    throw new LoginDoesNotExistException("login does not exist");
+                }
+
+            });
         
             if(passwordEncoder.matches(password, user.getPassword())) {
                 user.setPassword("");

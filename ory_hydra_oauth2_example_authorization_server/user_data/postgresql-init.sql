@@ -50,32 +50,24 @@ Output: none'';
 
 
 
-CREATE OR REPLACE PROCEDURE horns_and_hooves.get_login(
-	IN login horns_and_hooves.user.login%type,
-	INOUT ref_cursor refcursor
+CREATE OR REPLACE FUNCTION horns_and_hooves.get_login(
+	IN ref_login horns_and_hooves.user.login%type
 )
-AS 
+RETURNS REFCURSOR AS 
 $BODY$
+DECLARE
+    ref_cursor REFCURSOR;
 BEGIN
 
 	OPEN ref_cursor FOR 
-		SELECT u.login, u.password, u.org_name
+		SELECT u.*
 		FROM horns_and_hooves.user u
-		WHERE u.login = login;
+		WHERE u.login = ref_login;
+
+	RETURN ref_cursor;
 
 END
 $BODY$ LANGUAGE plpgsql;
-
-
-COMMENT ON PROCEDURE horns_and_hooves.get_login(
-		IN login horns_and_hooves.user.login%type,
-		INOUT ref_cursor refcursor
-	)
-    IS ''Get login record
-Params: in  login - user login
-		out ref_cursor - login record
-Output: none'';
-
 
 end;
 '  LANGUAGE PLPGSQL;

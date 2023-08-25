@@ -26,6 +26,10 @@ if [ ! -f .env ]; then
 
     # ------------------------------------------
 
+    HYDRA_DEPENDS_ON_MIGRATE="service_completed_successfully"
+
+    echo HYDRA_DEPENDS_ON_MIGRATE=${HYDRA_DEPENDS_ON_MIGRATE} >>.env
+
     echo USER_DATA_POSTGRESQL_PASSWORD=${USER_DATA_POSTGRESQL_PASSWORD} >>.env
    
     echo HYDRA_POSTGRESQL_PASSWORD=${HYDRA_POSTGRESQL_PASSWORD} >>.env

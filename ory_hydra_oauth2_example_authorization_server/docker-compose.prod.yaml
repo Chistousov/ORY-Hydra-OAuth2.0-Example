@@ -29,7 +29,9 @@ services:
         max-file: "1"
     mem_limit: 256M
     depends_on:
-      ory-hydra-oauth2-example-authorization-server-user-data-postgresql:
+      ory-hydra-oauth2-ex-auth-server-userdata-postgresql:
+        condition: service_healthy
+      ory-hydra-oauth2-ex-auth-server-hydradata-postgresql:
         condition: service_healthy
     networks:
       - app-network
@@ -53,6 +55,8 @@ services:
   #       -Dspring.datasource.driverClassName=org.postgresql.Driver
   #       -Dspring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
   #       -Dspring.datasource.url=jdbc:postgresql://user-data-postgresql:5432/user_data?user=user_data&password=${USER_DATA_POSTGRESQL_PASSWORD}&escapeSyntaxCallMode=callIfNoReturn
+    
+  #       -Dapplication.ory-hydra.admin.baseURI=https://ory-hydra-oauth2-example-authorization-server-hydra:4445/admin/
   #   user: "1005"
   #   mem_limit: 1G
   #   logging:
@@ -75,7 +79,7 @@ services:
   #     retries: 5
   #     start_period: 40s
   #   depends_on:
-  #     ory-hydra-oauth2-example-authorization-server-user-data-postgresql:
+  #     ory-hydra-oauth2-ex-auth-server-userdata-postgresql:
   #       condition: service_healthy
   #     ory-hydra-oauth2-example-authorization-server-hydra:
   #       condition: service_started

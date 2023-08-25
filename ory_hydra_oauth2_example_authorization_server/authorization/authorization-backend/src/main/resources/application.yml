@@ -28,6 +28,7 @@ logging:
 
 server:
   port: 8090
+  forward-headers-strategy: framework
   error:
     include-stacktrace: never
     
