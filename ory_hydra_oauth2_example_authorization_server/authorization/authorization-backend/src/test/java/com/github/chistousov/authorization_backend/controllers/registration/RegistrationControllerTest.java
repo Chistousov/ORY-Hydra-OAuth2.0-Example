@@ -48,12 +48,11 @@ public class RegistrationControllerTest {
 
         given(userService.createUser(postRegistrationModel)).willReturn(Mono.just(userIdExpected));
 
-
         // when
 
         thisServerWebTestClient
                 .mutateWith(SecurityMockServerConfigurers.mockUser())
-                .mutateWith(SecurityMockServerConfigurers.csrf())        
+                .mutateWith(SecurityMockServerConfigurers.csrf())
                 .post()
                 .uri("/registration")
                 .body(Mono.just(postRegistrationModel), PostRegistrationModel.class)
@@ -81,11 +80,9 @@ public class RegistrationControllerTest {
 
         final ObjectMapper mapper = new ObjectMapper();
         final String exMsgsExpected = mapper.writeValueAsString(
-                                                Arrays.array("login must be greater than 4", 
-                                                "password is invalid", 
-                                                "org name must be greater than 4") 
-                                        );
-
+                Arrays.array("login must be greater than 4",
+                        "password is invalid",
+                        "org name must be greater than 4"));
 
         final PostRegistrationModel postRegistrationModel = PostRegistrationModel
                 .builder()
@@ -98,7 +95,7 @@ public class RegistrationControllerTest {
 
         thisServerWebTestClient
                 .mutateWith(SecurityMockServerConfigurers.mockUser())
-                .mutateWith(SecurityMockServerConfigurers.csrf())        
+                .mutateWith(SecurityMockServerConfigurers.csrf())
                 .post()
                 .uri("/registration")
                 .body(Mono.just(postRegistrationModel), PostRegistrationModel.class)
@@ -112,7 +109,6 @@ public class RegistrationControllerTest {
                 .jsonPath(String.format("[?($.* anyof %s)]", exMsgsExpected)).isNotEmpty();
 
         // then (instead of verify)
-
 
     }
 }

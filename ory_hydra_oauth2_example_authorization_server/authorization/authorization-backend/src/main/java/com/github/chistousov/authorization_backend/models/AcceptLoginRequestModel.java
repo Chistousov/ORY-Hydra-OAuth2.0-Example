@@ -24,7 +24,7 @@ public class AcceptLoginRequestModel {
         if(Objects.isNull(acceptLoginRequestModelBuilder.getSubject()) 
         || acceptLoginRequestModelBuilder.getSubject().isBlank()
         ) {
-            throw new AcceptLoginRequestModelException("Не задан subject");
+            throw new AcceptLoginRequestModelException("Subject not set");
         }
 
         this.subject = acceptLoginRequestModelBuilder.getSubject();

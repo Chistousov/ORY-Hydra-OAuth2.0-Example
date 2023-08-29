@@ -27,17 +27,29 @@ import reactor.test.StepVerifier;
 @SpringBootTest
 public class UserServiceTest {
 
-    private static final File pathToResourceDockerComposeFile = Path.of("").toAbsolutePath().getParent().getParent()
-            .resolve("docker-compose.yaml").toFile();
+    /*------- const (begin) ------- */
+
+    // path docker compose
+    private static final File pathToResourceDockerComposeFile = Path.of("").toAbsolutePath().getParent().getParent().resolve("docker-compose.yaml").toFile();
+    
+    // postgresql service in docker compose
     private static final String postgresqlUserDataContainerDockerCompose = "ory-hydra-oauth2-ex-auth-server-userdata-postgresql";
     private static final int postgresqlUserDataPortDockerCompose = 5432;
     private static final String postgresqlUserDataUserDockerCompose = "user_data";
     private static final String postgresqlUserDataPassDockerCompose = "superpass";
 
+    /*------- const (end) ------- */
+
+    // start docker compose
     @Container
-    public static DockerComposeContainer<?> containersDockerCompose = new DockerComposeContainer<>(
-            pathToResourceDockerComposeFile)
+    public static DockerComposeContainer<?> containersDockerCompose = new DockerComposeContainer<>(pathToResourceDockerComposeFile)
+            // .env docker compose
             .withEnv("USER_DATA_POSTGRESQL_PASSWORD", postgresqlUserDataPassDockerCompose)
+            .withEnv("HYDRA_POSTGRESQL_PASSWORD", "superpass2")
+            .withEnv("HYDRA_SECRETS_COOKIE", "some_cookies111111111111111122222")
+            .withEnv("HYDRA_SECRETS_SYSTEM", "some_secrets111111111111111122222")
+            .withEnv("HYDRA_DEPENDS_ON_MIGRATE", "service_started")
+            // open postgresql port
             .withExposedService(postgresqlUserDataContainerDockerCompose, postgresqlUserDataPortDockerCompose,
                     Wait.forSuccessfulCommand(
                             String.format("pg_isready -U %s", postgresqlUserDataUserDockerCompose))
@@ -48,7 +60,7 @@ public class UserServiceTest {
             .withLocalCompose(true);
 
     @DynamicPropertySource
-    public static void postgresqlUserDataSettings(DynamicPropertyRegistry registry)
+    public static void setting(DynamicPropertyRegistry registry)
             throws UnsupportedEncodingException {
 
         registry.add("spring.datasource.driverClassName", () -> "org.postgresql.Driver");
@@ -67,7 +79,7 @@ public class UserServiceTest {
         registry.add("spring.datasource.url", () -> postgresqlStringConn);
 
         registry.add("application.ory-hydra.admin.baseURI", () -> "");
-
+        registry.add("application.ory-hydra.public.baseURI", () -> "");
     }
 
     @Autowired
@@ -85,8 +97,7 @@ public class UserServiceTest {
 
         final String org1 = "someorg1";
         final String org2 = "someorg2";
-        
-        
+
         final PostRegistrationModel user1 = PostRegistrationModel
                 .builder()
                 .login(login1)
@@ -115,7 +126,6 @@ public class UserServiceTest {
                 .orgName(org2)
                 .build();
 
-
         // when
         StepVerifier
                 .create(userService.createUser(user1))
@@ -138,7 +148,7 @@ public class UserServiceTest {
         // then (instead of verify)
 
     }
-    
+
     @Test
     @DisplayName("Successful user creation and subsequent selection")
     void testGetUser() {
@@ -161,10 +171,10 @@ public class UserServiceTest {
                 .build();
 
         final User expectedUser = User.builder()
-                                        .login(login1)
-                                        .password("")
-                                        .orgName(org1)
-                                        .build();
+                .login(login1)
+                .password("")
+                .orgName(org1)
+                .build();
 
         StepVerifier
                 .create(userService.createUser(user))
@@ -178,18 +188,15 @@ public class UserServiceTest {
                 .expectNext(expectedUser)
                 .verifyComplete();
 
-        
         StepVerifier
                 .create(userService.getUser(login2, pass1))
-                .verifyErrorMatches(ex -> 
-                    ex instanceof LoginDoesNotExistException && ex.getMessage().equals("login does not exist")
-                );
+                .verifyErrorMatches(ex -> ex instanceof LoginDoesNotExistException
+                        && ex.getMessage().equals("login does not exist"));
 
         StepVerifier
                 .create(userService.getUser(login1, pass2))
-                .verifyErrorMatches(ex -> 
-                    ex instanceof IncorrectPasswordException && ex.getMessage().equals("Password is incorrect! ")
-                );
+                .verifyErrorMatches(ex -> ex instanceof IncorrectPasswordException
+                        && ex.getMessage().equals("Password is incorrect! "));
 
     }
 }

@@ -1,15 +1,11 @@
 package com.github.chistousov.authorization_backend.services;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import javax.persistence.EntityManager;
-import javax.persistence.ParameterMode;
 import javax.persistence.PersistenceContext;
-import javax.persistence.StoredProcedureQuery;
 
-import org.hibernate.mapping.Any;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,17 +32,15 @@ import reactor.core.scheduler.Scheduler;
  */
 @Service
 public class UserService {
-    
+
     private TransactionTemplate transactionTemplate;
     private Scheduler jdbcScheduler;
 
     private UserRepository userRepository;
-
     private PasswordEncoder passwordEncoder;
 
     @PersistenceContext
-    EntityManager em;
-
+    private EntityManager em;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoderRegister) {
         this.userRepository = userRepository;
@@ -79,22 +73,20 @@ public class UserService {
      * @since 11
      */
     public Mono<Long> createUser(PostRegistrationModel postRegistrationModel) {
-        
+
         return Mono.fromCallable(
                 () -> {
-                    
+
                     String hashPassword = passwordEncoder.encode(postRegistrationModel.getPassword());
 
-                    return transaction(() ->  userRepository.createUser(
-                                                postRegistrationModel.getLogin(), 
-                                                hashPassword, 
-                                                postRegistrationModel.getOrgName()
-                                            ));
+                    return transaction(() -> userRepository.createUser(
+                            postRegistrationModel.getLogin(),
+                            hashPassword,
+                            postRegistrationModel.getOrgName()));
                 })
                 .subscribeOn(jdbcScheduler);
-    
-    }
 
+    }
 
     /**
      * 
@@ -103,7 +95,7 @@ public class UserService {
      * </p>
      * 
      * 
-     * @param login - login
+     * @param login    - login
      * 
      * @param password - password
      * 
@@ -113,26 +105,26 @@ public class UserService {
      * @since 11
      */
     public Mono<User> getUser(String login, String password) {
-        
+
         return Mono.fromCallable(() -> {
-            
+
             User user = transaction(() -> {
-                
-                var storedProcedure =  em.createNamedStoredProcedureQuery("User.getUserByLogin");
+
+                var storedProcedure = em.createNamedStoredProcedureQuery("User.getUserByLogin");
                 storedProcedure.setParameter(2, login);
                 storedProcedure.execute();
 
-                List<User> users = (List<User>)storedProcedure.getResultList();
+                List<User> users = (List<User>) storedProcedure.getResultList();
 
-                if(!users.isEmpty()){
+                if (!users.isEmpty()) {
                     return users.get(0);
                 } else {
                     throw new LoginDoesNotExistException("login does not exist");
                 }
 
             });
-        
-            if(passwordEncoder.matches(password, user.getPassword())) {
+
+            if (passwordEncoder.matches(password, user.getPassword())) {
                 user.setPassword("");
 
                 return user;
@@ -140,11 +132,8 @@ public class UserService {
                 throw new IncorrectPasswordException("Password is incorrect! ");
             }
         })
-                .subscribeOn(jdbcScheduler)
-                .log();
-    
+        .subscribeOn(jdbcScheduler);
     }
-
 
     /**
      * <p>
