@@ -1,6 +1,9 @@
 package com.github.chistousov.authorization_backend.models;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.List;
@@ -8,6 +11,9 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)

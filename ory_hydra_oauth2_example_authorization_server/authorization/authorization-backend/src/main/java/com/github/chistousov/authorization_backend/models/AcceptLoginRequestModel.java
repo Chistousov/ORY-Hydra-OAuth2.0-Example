@@ -6,9 +6,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.chistousov.authorization_backend.exceptions.AcceptLoginRequestModelException;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 @Getter
+@EqualsAndHashCode( of = { "subject" })
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AcceptLoginRequestModel {
     private String subject;

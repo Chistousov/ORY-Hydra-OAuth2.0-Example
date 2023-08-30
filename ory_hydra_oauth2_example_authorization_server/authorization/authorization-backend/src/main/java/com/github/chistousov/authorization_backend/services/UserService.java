@@ -104,11 +104,51 @@ public class UserService {
      * @author Nikita Chistousov (chistousov.nik@yandex.ru)
      * @since 11
      */
-    public Mono<User> getUser(String login, String password) {
+    public Mono<User> getUserAndCheck(String login, String password) {
 
         return Mono.fromCallable(() -> {
 
-            User user = transaction(() -> {
+            User user = getUserInDB(login);
+
+            if (passwordEncoder.matches(password, user.getPassword())) {
+                user.setPassword("");
+
+                return user;
+            } else {
+                throw new IncorrectPasswordException("Password is incorrect! ");
+            }
+        })
+        .subscribeOn(jdbcScheduler);
+    }
+
+    /**
+     * 
+     * <p>
+     * Get user by login
+     * </p>
+     * 
+     * 
+     * @param login    - login
+     * 
+     * @return user data
+     * 
+     * @author Nikita Chistousov (chistousov.nik@yandex.ru)
+     * @since 11
+     */
+    public Mono<User> getUser(String login) {
+
+        return Mono.fromCallable(() -> {
+
+            User user = getUserInDB(login);
+            user.setPassword("");
+            return user;
+
+        })
+        .subscribeOn(jdbcScheduler);
+    }
+
+    private User getUserInDB(String login){
+        return transaction(() -> {
 
                 var storedProcedure = em.createNamedStoredProcedureQuery("User.getUserByLogin");
                 storedProcedure.setParameter(2, login);
@@ -123,26 +163,16 @@ public class UserService {
                 }
 
             });
-
-            if (passwordEncoder.matches(password, user.getPassword())) {
-                user.setPassword("");
-
-                return user;
-            } else {
-                throw new IncorrectPasswordException("Password is incorrect! ");
-            }
-        })
-        .subscribeOn(jdbcScheduler);
     }
 
     /**
      * <p>
-     * Дополнительная обертка для ручной транзакции для игнорирования в JaCoCo
+     * Additional wrapper for manual transaction to be ignored in JaCoCo
      * </p>
      * 
-     * @param manId - пользователь в системе
+     * @param manId - user in the system
      * 
-     * @return информация о пользователе
+     * @return user information
      * 
      * @author Nikita Chistousov (chistousov.nik@yandex.ru)
      * @since 11

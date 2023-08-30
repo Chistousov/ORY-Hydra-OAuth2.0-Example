@@ -16,7 +16,7 @@ public class SpringSecurityConfiguration {
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
-            .authorizeExchange(ex -> ex.pathMatchers("/registration", "/actuator/health").permitAll())
+            .authorizeExchange(ex -> ex.pathMatchers("/registration", "/login", "/actuator/health").permitAll())
             .csrf(csrf -> csrf.csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse()));
         return http.build();
     }

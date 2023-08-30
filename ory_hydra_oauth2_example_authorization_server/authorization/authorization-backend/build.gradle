@@ -81,6 +81,9 @@ dependencies {
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'org.testcontainers:junit-jupiter'
 	testImplementation 'org.testcontainers:postgresql'
+
+	testImplementation "org.testcontainers:mockserver:1.18.3"
+	testImplementation "org.mock-server:mockserver-client-java:5.15.0"
 }
 
 dependencyManagement {

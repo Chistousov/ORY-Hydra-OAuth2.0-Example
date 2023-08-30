@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.support.WebExchangeBindException;
 
+import com.github.chistousov.authorization_backend.exceptions.IncorrectPasswordException;
+import com.github.chistousov.authorization_backend.exceptions.LoginDoesNotExistException;
 import com.github.chistousov.authorization_backend.exceptions.relational_database.LoginOrOrgExistException;
 import com.github.chistousov.authorization_backend.jacoco_ignore.ExcludeFromJacocoGeneratedReport;
 
@@ -58,8 +60,9 @@ public class GlobalExceptionHandler {
             .doOnEach(el -> log.error(req.getPath().toString()+" ", ex));
     }
 
-    @ExceptionHandler(LoginOrOrgExistException.class)
-    public Mono<Void> loginOrOrgExistExceptionHandler(ServerHttpRequest req, ServerHttpResponse response, LoginOrOrgExistException ex){
+
+    @ExceptionHandler({LoginDoesNotExistException.class, IncorrectPasswordException.class, LoginOrOrgExistException.class})
+    public Mono<Void> anyExceptionHandler(ServerHttpRequest req, ServerHttpResponse response, RuntimeException ex){
 
         response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
         response.setStatusCode(HttpStatus.BAD_REQUEST);

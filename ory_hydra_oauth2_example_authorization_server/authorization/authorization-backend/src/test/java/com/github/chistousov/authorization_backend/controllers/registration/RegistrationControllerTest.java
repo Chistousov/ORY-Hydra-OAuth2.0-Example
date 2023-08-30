@@ -10,17 +10,20 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.chistousov.authorization_backend.SpringSecurityConfiguration;
 import com.github.chistousov.authorization_backend.models.PostRegistrationModel;
 import com.github.chistousov.authorization_backend.services.UserService;
 
 import reactor.core.publisher.Mono;
 
-@WebFluxTest
+@WebFluxTest(controllers = {RegistrationController.class})
+@Import(SpringSecurityConfiguration.class)
 public class RegistrationControllerTest {
 
     @Autowired
@@ -51,7 +54,6 @@ public class RegistrationControllerTest {
         // when
 
         thisServerWebTestClient
-                .mutateWith(SecurityMockServerConfigurers.mockUser())
                 .mutateWith(SecurityMockServerConfigurers.csrf())
                 .post()
                 .uri("/registration")
@@ -94,7 +96,6 @@ public class RegistrationControllerTest {
         // when
 
         thisServerWebTestClient
-                .mutateWith(SecurityMockServerConfigurers.mockUser())
                 .mutateWith(SecurityMockServerConfigurers.csrf())
                 .post()
                 .uri("/registration")

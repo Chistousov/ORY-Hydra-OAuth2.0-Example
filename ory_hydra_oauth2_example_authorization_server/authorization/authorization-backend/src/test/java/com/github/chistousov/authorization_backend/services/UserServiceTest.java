@@ -150,8 +150,8 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Successful user creation and subsequent selection")
-    void testGetUser() {
+    @DisplayName("Check user")
+    void testGetUserAndCheck() {
 
         // given (instead of when)
 
@@ -184,19 +184,65 @@ public class UserServiceTest {
         // when
 
         StepVerifier
-                .create(userService.getUser(user.getLogin(), user.getPassword()))
+                .create(userService.getUserAndCheck(user.getLogin(), user.getPassword()))
                 .expectNext(expectedUser)
                 .verifyComplete();
 
         StepVerifier
-                .create(userService.getUser(login2, pass1))
+                .create(userService.getUserAndCheck(login2, pass1))
                 .verifyErrorMatches(ex -> ex instanceof LoginDoesNotExistException
                         && ex.getMessage().equals("login does not exist"));
 
         StepVerifier
-                .create(userService.getUser(login1, pass2))
+                .create(userService.getUserAndCheck(login1, pass2))
                 .verifyErrorMatches(ex -> ex instanceof IncorrectPasswordException
                         && ex.getMessage().equals("Password is incorrect! "));
+
+    }
+
+    @Test
+    @DisplayName("Get user")
+    void testGetUser() {
+
+        // given (instead of when)
+
+        final String login1 = "someuser1_czxc";
+        final String login2 = "someuser2_czx";
+
+        final String pass1 = "zxcvxbxvvcxvxcvxcvccc";
+
+        final String org1 = "someorg1_adsad";
+
+        final PostRegistrationModel user = PostRegistrationModel
+                .builder()
+                .login(login1)
+                .password(pass1)
+                .orgName(org1)
+                .build();
+
+        final User expectedUser = User.builder()
+                .login(login1)
+                .password("")
+                .orgName(org1)
+                .build();
+
+        StepVerifier
+                .create(userService.createUser(user))
+                .expectNextCount(1)
+                .verifyComplete();
+
+        // when
+
+        StepVerifier
+                .create(userService.getUser(user.getLogin()))
+                .expectNext(expectedUser)
+                .verifyComplete();
+
+        StepVerifier
+                .create(userService.getUser(login2))
+                .verifyErrorMatches(ex -> ex instanceof LoginDoesNotExistException
+                        && ex.getMessage().equals("login does not exist"));
+
 
     }
 }

@@ -28,6 +28,10 @@ logging:
 
 server:
   port: 8090
+  reactive:
+    session:
+      cookie:
+        name: SESSION-LOGIN-WRAPPER
   forward-headers-strategy: framework
   error:
     include-stacktrace: never
