@@ -29,7 +29,7 @@
     <mat-label>Enter the password</mat-label>
     <input id="password" [type]="passwordShowFlag ? 'text' : 'password'" matInput placeholder="Enter the password"
       required formControlName="password">
-    <button type="button" mat-icon-button matSuffix #tooltipPassword="matTooltip" matTooltip="Show Password"
+    <button id="hideOrShowPasswordButton1" type="button" mat-icon-button matSuffix #tooltipPassword="matTooltip" matTooltip="Show Password"
       matTooltipPosition="above" (click)="passwordDisplay(tooltipPassword);$event.stopPropagation();"
       [attr.aria-label]="'Hide password'" [attr.aria-pressed]="passwordShowFlag">
       <i class="far" [ngClass]='passwordShowFlag ? "fa-eye" : "fa-eye-slash"'></i>
@@ -49,8 +49,13 @@
 
   <mat-form-field>
     <mat-label>Repeat password</mat-label>
-    <input id="repeatPassword" type="password" matInput placeholder="Repeat password" required
+    <input id="repeatPassword" [type]="passwordShowFlag2 ? 'text' : 'password'" matInput placeholder="Repeat password" required
       formControlName="repeatPassword">
+    <button id="hideOrShowPasswordButton2" type="button" mat-icon-button matSuffix #tooltipPassword2="matTooltip" matTooltip="Show Password"
+      matTooltipPosition="above" (click)="passwordDisplay2(tooltipPassword2);$event.stopPropagation();"
+      [attr.aria-label]="'Hide password'" [attr.aria-pressed]="passwordShowFlag2">
+      <i class="far" [ngClass]='passwordShowFlag2 ? "fa-eye" : "fa-eye-slash"'></i>
+    </button>
 
     <mat-hint align="start">(Ctrl+R) Repeat password</mat-hint>
     <mat-hint align="end">{{repeatPassword.value.length || 0}}</mat-hint>

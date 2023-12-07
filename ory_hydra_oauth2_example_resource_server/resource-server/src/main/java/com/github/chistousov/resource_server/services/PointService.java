@@ -15,34 +15,33 @@ import reactor.core.publisher.Flux;
 @ExcludeFromJacocoGeneratedReport
 public class PointService {
 
-    private List<Point> points;
+  private List<Point> points;
 
-    private double nextX;
-    
-    private Random random = new Random();
+  private double nextX;
 
-    public PointService() {
+  private Random random = new Random();
 
-        this.points = new ArrayList<>();
-        this.points.add(new Point(1, 2.3));
-        this.points.add(new Point(2, 1.7));
-        this.points.add(new Point(3, 5.4));
-        this.points.add(new Point(4, 6.8));
-        this.points.add(new Point(5, 4.2));
-        this.points.add(new Point(6, 3.6));
+  public PointService() {
 
-        this.nextX = 7 + (2 * random.nextDouble());
+    this.points = new ArrayList<>();
+    this.points.add(new Point(1, 2.3));
+    this.points.add(new Point(2, 1.7));
+    this.points.add(new Point(3, 5.4));
+    this.points.add(new Point(4, 6.8));
+    this.points.add(new Point(5, 4.2));
+    this.points.add(new Point(6, 3.6));
 
-    }
+    this.nextX = 7 + (2 * random.nextDouble());
 
-    public Flux<Point> getPoints(){
-        return Flux.fromIterable(points);
-    }
+  }
 
-    public void calculateNewPoint(){
-        points.add(new Point(nextX, 20 * random.nextDouble()));
-        nextX += 2 * random.nextDouble();
-    }
+  public Flux<Point> getPoints() {
+    return Flux.fromIterable(points);
+  }
 
-    
+  public void calculateNewPoint() {
+    points.add(new Point(nextX, 20 * random.nextDouble()));
+    nextX += 2 * random.nextDouble();
+  }
+
 }

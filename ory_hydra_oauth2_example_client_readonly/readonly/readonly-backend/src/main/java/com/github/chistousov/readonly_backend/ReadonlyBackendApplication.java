@@ -9,8 +9,8 @@ import com.github.chistousov.readonly_backend.jacoco_ignore.ExcludeFromJacocoGen
 @ExcludeFromJacocoGeneratedReport
 public class ReadonlyBackendApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(ReadonlyBackendApplication.class, args);
-	}
+  public static void main(String[] args) {
+    SpringApplication.run(ReadonlyBackendApplication.class, args);
+  }
 
 }

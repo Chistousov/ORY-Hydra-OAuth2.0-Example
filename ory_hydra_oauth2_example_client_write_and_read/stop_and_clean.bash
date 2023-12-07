@@ -8,5 +8,3 @@ rm -rf CAForNginx/ca.crt || true
 rm -rf CAForNginx/ca.srl || true
 
 rm -rf nginx/cert/ || true
-
-rm -rf authorization-server.com.truststore.p12 || true

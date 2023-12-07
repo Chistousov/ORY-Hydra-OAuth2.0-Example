@@ -17,20 +17,18 @@ import reactor.core.publisher.Flux;
 @Slf4j
 public class StatisticsController {
 
-    private PointService pointService;
+  private PointService pointService;
 
-    public StatisticsController(PointService pointService){
-        this.pointService = pointService;
-    }
+  public StatisticsController(PointService pointService) {
+    this.pointService = pointService;
+  }
 
-    @Operation(
-        summary = "Get statistics"
-    )
-    @GetMapping
-    @ResponseBody
-    public Flux<Point> getStatistics() {
-        return this.pointService
-                .getPoints()
-                .doOnComplete(() -> log.info("Response: get points "));
-    }
+  @Operation(summary = "Get statistics")
+  @GetMapping
+  @ResponseBody
+  public Flux<Point> getStatistics() {
+    return this.pointService
+        .getPoints()
+        .doOnComplete(() -> log.info("Response: get points "));
+  }
 }

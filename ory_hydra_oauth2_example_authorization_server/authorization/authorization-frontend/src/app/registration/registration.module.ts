@@ -14,6 +14,8 @@ import { HttpClientModule } from '@angular/common/http';
 
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+
 @NgModule({
   declarations: [
     RegistrationComponent
@@ -27,7 +29,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     ReactiveFormsModule,
     MatButtonModule,
     MatProgressSpinnerModule,
-    HttpClientModule
+    HttpClientModule,
+    MatSnackBarModule
   ],
   providers:[
     RegistrationService

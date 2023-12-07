@@ -2,12 +2,6 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "newProjectRoot": "projects",
-  "cli": {
-    "cache": {
-      "path": "/tmp/.angular/cache"
-    },
-    "analytics": false
-  },
   "projects": {
     "readonly-frontend": {
       "projectType": "application",
@@ -21,11 +15,11 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/readonly-frontend/browser",
+            "outputPath": "dist/readonly-frontend",
             "index": "src/index.html",
-            "main": "src/main.ts",
+            "browser": "src/main.ts",
             "polyfills": [
               "zone.js"
             ],
@@ -39,7 +33,12 @@
             "styles": [
               "src/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "server": "src/main.server.ts",
+            "prerender": true,
+            "ssr": {
+              "entry": "server.ts"
+            }
           },
           "configurations": {
             "production": {
@@ -58,12 +57,9 @@
               "outputHashing": "all"
             },
             "development": {
-              "buildOptimizer": false,
               "optimization": false,
-              "vendorChunk": true,
               "extractLicenses": false,
               "sourceMap": true,
-              "namedChunks": true,
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -78,10 +74,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "browserTarget": "readonly-frontend:build:production"
+              "buildTarget": "readonly-frontend:build:production"
             },
             "development": {
-              "browserTarget": "readonly-frontend:build:development"
+              "buildTarget": "readonly-frontend:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -89,7 +85,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "readonly-frontend:build"
+            "buildTarget": "readonly-frontend:build"
           }
         },
         "test": {
@@ -112,74 +108,14 @@
             "scripts": [],
             "karmaConfig": "karma.conf.js",
             "codeCoverageExclude": [
-              "src/app/app.component.ts",
               "src/app/window.service.ts"
             ]
           }
-        },
-        "server": {
-          "builder": "@angular-devkit/build-angular:server",
-          "options": {
-            "outputPath": "dist/readonly-frontend/server",
-            "main": "server.ts",
-            "tsConfig": "tsconfig.server.json",
-            "inlineStyleLanguage": "scss"
-          },
-          "configurations": {
-            "production": {
-              "outputHashing": "media"
-            },
-            "development": {
-
-              "buildOptimizer": false,
-              "optimization": false,
-              "sourceMap": true,
-              "extractLicenses": false,
-              "vendorChunk": true,
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.development.ts"
-                }
-              ]
-            }
-          },
-          "defaultConfiguration": "production"
-        },
-        "serve-ssr": {
-          "builder": "@nguniversal/builders:ssr-dev-server",
-          "configurations": {
-            "development": {
-              "browserTarget": "readonly-frontend:build:development",
-              "serverTarget": "readonly-frontend:server:development"
-            },
-            "production": {
-              "browserTarget": "readonly-frontend:build:production",
-              "serverTarget": "readonly-frontend:server:production"
-            }
-          },
-          "defaultConfiguration": "development"
-        },
-        "prerender": {
-          "builder": "@nguniversal/builders:prerender",
-          "options": {
-            "routes": [
-              "/"
-            ]
-          },
-          "configurations": {
-            "production": {
-              "browserTarget": "readonly-frontend:build:production",
-              "serverTarget": "readonly-frontend:server:production"
-            },
-            "development": {
-              "browserTarget": "readonly-frontend:build:development",
-              "serverTarget": "readonly-frontend:server:development"
-            }
-          },
-          "defaultConfiguration": "production"
         }
       }
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }

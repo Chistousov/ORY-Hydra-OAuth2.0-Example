@@ -13,17 +13,18 @@ import org.springframework.security.web.server.csrf.CookieServerCsrfTokenReposit
 @EnableWebFluxSecurity
 public class SpringSecurityConfiguration {
 
-    @Bean
-    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
-        http
-            .authorizeExchange(ex -> ex.pathMatchers("/registration", "/login", "/actuator/health").permitAll())
-            .csrf(csrf -> csrf.csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse()));
-        return http.build();
-    }
+  @Bean
+  public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
+    http
+        .authorizeExchange(
+            ex -> ex.pathMatchers("/registration", "/login", "/consent/**", "/logout", "/actuator/health").permitAll())
+        .csrf(csrf -> csrf.csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse()));
+    return http.build();
+  }
 
-    @Bean
-    public PasswordEncoder passwordEncoderRegister() {
-        return new BCryptPasswordEncoder();
-    }
+  @Bean
+  public PasswordEncoder passwordEncoderRegister() {
+    return new BCryptPasswordEncoder();
+  }
 
 }

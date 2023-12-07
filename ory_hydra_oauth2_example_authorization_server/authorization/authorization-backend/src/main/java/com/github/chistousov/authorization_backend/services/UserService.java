@@ -26,159 +26,159 @@ import reactor.core.scheduler.Scheduler;
  * <p>
  * Service for working with the user (creation and verification)
  * </p>
- * 
+ *
  * @author Nikita Chistousov (chistousov.nik@yandex.ru)
  * @since 11
  */
 @Service
 public class UserService {
 
-    private TransactionTemplate transactionTemplate;
-    private Scheduler jdbcScheduler;
+  private TransactionTemplate transactionTemplate;
+  private Scheduler jdbcScheduler;
 
-    private UserRepository userRepository;
-    private PasswordEncoder passwordEncoder;
+  private UserRepository userRepository;
+  private PasswordEncoder passwordEncoder;
 
-    @PersistenceContext
-    private EntityManager em;
+  @PersistenceContext
+  private EntityManager em;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoderRegister) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoderRegister;
-    }
+  public UserService(UserRepository userRepository, PasswordEncoder passwordEncoderRegister) {
+    this.userRepository = userRepository;
+    this.passwordEncoder = passwordEncoderRegister;
+  }
 
-    @Autowired
-    public void setTransactionTemplate(TransactionTemplate transactionTemplate) {
-        this.transactionTemplate = transactionTemplate;
-    }
+  @Autowired
+  public void setTransactionTemplate(TransactionTemplate transactionTemplate) {
+    this.transactionTemplate = transactionTemplate;
+  }
 
-    @Autowired
-    @Qualifier("jdbcScheduler")
-    public void setJdbcScheduler(Scheduler jdbcScheduler) {
-        this.jdbcScheduler = jdbcScheduler;
-    }
+  @Autowired
+  @Qualifier("jdbcScheduler")
+  public void setJdbcScheduler(Scheduler jdbcScheduler) {
+    this.jdbcScheduler = jdbcScheduler;
+  }
 
-    /**
-     * 
-     * <p>
-     * Create a user
-     * </p>
-     * 
-     * 
-     * @param postRegistrationModel - registration data
-     * 
-     * @return user id
-     * 
-     * @author Nikita Chistousov (chistousov.nik@yandex.ru)
-     * @since 11
-     */
-    public Mono<Long> createUser(PostRegistrationModel postRegistrationModel) {
+  /**
+   *
+   * <p>
+   * Create a user
+   * </p>
+   *
+   *
+   * @param postRegistrationModel - registration data
+   *
+   * @return user id
+   *
+   * @author Nikita Chistousov (chistousov.nik@yandex.ru)
+   * @since 11
+   */
+  public Mono<Long> createUser(PostRegistrationModel postRegistrationModel) {
 
-        return Mono.fromCallable(
-                () -> {
+    return Mono.fromCallable(
+        () -> {
 
-                    String hashPassword = passwordEncoder.encode(postRegistrationModel.getPassword());
+          String hashPassword = passwordEncoder.encode(postRegistrationModel.getPassword());
 
-                    return transaction(() -> userRepository.createUser(
-                            postRegistrationModel.getLogin(),
-                            hashPassword,
-                            postRegistrationModel.getOrgName()));
-                })
-                .subscribeOn(jdbcScheduler);
-
-    }
-
-    /**
-     * 
-     * <p>
-     * Get user by login and check user
-     * </p>
-     * 
-     * 
-     * @param login    - login
-     * 
-     * @param password - password
-     * 
-     * @return user data
-     * 
-     * @author Nikita Chistousov (chistousov.nik@yandex.ru)
-     * @since 11
-     */
-    public Mono<User> getUserAndCheck(String login, String password) {
-
-        return Mono.fromCallable(() -> {
-
-            User user = getUserInDB(login);
-
-            if (passwordEncoder.matches(password, user.getPassword())) {
-                user.setPassword("");
-
-                return user;
-            } else {
-                throw new IncorrectPasswordException("Password is incorrect! ");
-            }
+          return transaction(() -> userRepository.createUser(
+              postRegistrationModel.getLogin(),
+              hashPassword,
+              postRegistrationModel.getOrgName()));
         })
         .subscribeOn(jdbcScheduler);
-    }
 
-    /**
-     * 
-     * <p>
-     * Get user by login
-     * </p>
-     * 
-     * 
-     * @param login    - login
-     * 
-     * @return user data
-     * 
-     * @author Nikita Chistousov (chistousov.nik@yandex.ru)
-     * @since 11
-     */
-    public Mono<User> getUser(String login) {
+  }
 
-        return Mono.fromCallable(() -> {
+  /**
+   *
+   * <p>
+   * Get user by login and check user
+   * </p>
+   *
+   *
+   * @param login    - login
+   *
+   * @param password - password
+   *
+   * @return user data
+   *
+   * @author Nikita Chistousov (chistousov.nik@yandex.ru)
+   * @since 11
+   */
+  public Mono<User> getUserAndCheck(String login, String password) {
 
-            User user = getUserInDB(login);
-            user.setPassword("");
-            return user;
+    return Mono.fromCallable(() -> {
 
-        })
+      User user = getUserInDB(login);
+
+      if (passwordEncoder.matches(password, user.getPassword())) {
+        user.setPassword("");
+
+        return user;
+      } else {
+        throw new IncorrectPasswordException("Password is incorrect! ");
+      }
+    })
         .subscribeOn(jdbcScheduler);
-    }
+  }
 
-    private User getUserInDB(String login){
-        return transaction(() -> {
+  /**
+   *
+   * <p>
+   * Get user by login
+   * </p>
+   *
+   *
+   * @param login - login
+   *
+   * @return user data
+   *
+   * @author Nikita Chistousov (chistousov.nik@yandex.ru)
+   * @since 11
+   */
+  public Mono<User> getUser(String login) {
 
-                var storedProcedure = em.createNamedStoredProcedureQuery("User.getUserByLogin");
-                storedProcedure.setParameter(2, login);
-                storedProcedure.execute();
+    return Mono.fromCallable(() -> {
 
-                List<User> users = (List<User>) storedProcedure.getResultList();
+      User user = getUserInDB(login);
+      user.setPassword("");
+      return user;
 
-                if (!users.isEmpty()) {
-                    return users.get(0);
-                } else {
-                    throw new LoginDoesNotExistException("login does not exist");
-                }
+    })
+        .subscribeOn(jdbcScheduler);
+  }
 
-            });
-    }
+  private User getUserInDB(String login) {
+    return transaction(() -> {
 
-    /**
-     * <p>
-     * Additional wrapper for manual transaction to be ignored in JaCoCo
-     * </p>
-     * 
-     * @param manId - user in the system
-     * 
-     * @return user information
-     * 
-     * @author Nikita Chistousov (chistousov.nik@yandex.ru)
-     * @since 11
-     */
-    @ExcludeFromJacocoGeneratedReport
-    private <T> T transaction(Supplier<T> s) {
-        return transactionTemplate.execute(status -> s.get());
-    }
+      var storedProcedure = em.createNamedStoredProcedureQuery("User.getUserByLogin");
+      storedProcedure.setParameter(2, login);
+      storedProcedure.execute();
+
+      List<User> users = (List<User>) storedProcedure.getResultList();
+
+      if (!users.isEmpty()) {
+        return users.get(0);
+      } else {
+        throw new LoginDoesNotExistException("login does not exist");
+      }
+
+    });
+  }
+
+  /**
+   * <p>
+   * Additional wrapper for manual transaction to be ignored in JaCoCo
+   * </p>
+   *
+   * @param manId - user in the system
+   *
+   * @return user information
+   *
+   * @author Nikita Chistousov (chistousov.nik@yandex.ru)
+   * @since 11
+   */
+  @ExcludeFromJacocoGeneratedReport
+  private <T> T transaction(Supplier<T> s) {
+    return transactionTemplate.execute(status -> s.get());
+  }
 }

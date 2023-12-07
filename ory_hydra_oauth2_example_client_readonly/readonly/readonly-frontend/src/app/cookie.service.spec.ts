@@ -58,5 +58,4 @@ describe('CookieService', () => {
     expect(actualSomeCookieValue2).toEqual(expectedNotExistCookieValue);
 
   })
-
 });

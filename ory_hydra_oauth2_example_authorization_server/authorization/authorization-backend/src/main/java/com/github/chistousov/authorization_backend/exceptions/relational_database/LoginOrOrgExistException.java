@@ -4,7 +4,7 @@ import org.springframework.dao.DataAccessException;
 
 public class LoginOrOrgExistException extends DataAccessException {
 
-    public LoginOrOrgExistException(String message) {
-        super(message);
-    }
+  public LoginOrOrgExistException(String message) {
+    super(message);
+  }
 }

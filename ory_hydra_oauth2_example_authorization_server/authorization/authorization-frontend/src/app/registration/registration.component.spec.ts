@@ -31,7 +31,8 @@ describe('RegistrationComponent', () => {
   let orgNameInput: HTMLInputElement;
   let submitButton: HTMLButtonElement;
 
-  let hideOrShowPasswordButton: HTMLButtonElement;
+  let hideOrShowPasswordButton1: HTMLButtonElement;
+  let hideOrShowPasswordButton2: HTMLButtonElement;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -80,7 +81,8 @@ describe('RegistrationComponent', () => {
     orgNameInput = hostDe.query(By.css("#orgName")).nativeElement;
     submitButton = hostDe.query(By.css("#submitButton")).nativeElement;
 
-    hideOrShowPasswordButton = hostDe.query(By.css("button[matTooltip='Show Password']")).nativeElement;
+    hideOrShowPasswordButton1 = hostDe.query(By.css("#hideOrShowPasswordButton1")).nativeElement;
+    hideOrShowPasswordButton2 = hostDe.query(By.css("#hideOrShowPasswordButton2")).nativeElement;
   });
 
   it('should create', () => {
@@ -120,19 +122,28 @@ describe('RegistrationComponent', () => {
     fixture.detectChanges();
 
     // check hide/show password
-    hideOrShowPasswordButton.click();
+    hideOrShowPasswordButton1.click();
     tick();
-    expect(component.passwordShowFlag).withContext("passwordShowFlag === false").toEqual(true);
+    expect(component.passwordShowFlag).withContext("passwordShowFlag1 === false").toEqual(true);
 
-    hideOrShowPasswordButton.click();
+    hideOrShowPasswordButton1.click();
     tick();
-    expect(component.passwordShowFlag).withContext("passwordShowFlag === true").toEqual(false);
+    expect(component.passwordShowFlag).withContext("passwordShowFlag1 === true").toEqual(false);
+
+    hideOrShowPasswordButton2.click();
+    tick();
+    expect(component.passwordShowFlag2).withContext("passwordShowFlag2 === false").toEqual(true);
+
+    hideOrShowPasswordButton2.click();
+    tick();
+    expect(component.passwordShowFlag2).withContext("passwordShowFlag2 === true").toEqual(false);
 
     // form valid?
     expect(submitButton.disabled).withContext("submitButton.disabled === true").toEqual(false);
     expect(component.registrationFormGroup.invalid).withContext("submitButton.disabled === true").toEqual(false);
 
     submitButton.click();
+    tick(10000);
     
     // then (instead of verify)
 

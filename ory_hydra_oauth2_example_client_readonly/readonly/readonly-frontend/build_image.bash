@@ -14,11 +14,11 @@ export VERSION="1.0.0"
 
 npm i
 
-ng test --no-watch --code-coverage
+ng test --no-watch --code-coverage --browsers Firefox
 rm -rf dist/ || true
-npm run build:ssr
+npm run build
 
-docker pull paketobuildpacks/builder:0.2.433-full
+docker pull paketobuildpacks/builder-jammy-full:0.3.316
 
 rm -rf app_server/ || true
 mkdir app_server
@@ -33,10 +33,10 @@ $REPO_IMAGE/$PROJECT_NAME:$VERSION \
 --env NO_PROXY="$NO_PROXY" \
 --env BP_NODE_OPTIMIZE_MEMORY=true \
 --env BP_HEALTH_CHECKER_ENABLED=true \
---env BP_LAUNCHPOINT="dist/readonly-frontend/server/main.js" \
+--env BP_LAUNCHPOINT="dist/readonly-frontend/server/server.mjs" \
 --buildpack gcr.io/paketo-buildpacks/nodejs \
 --buildpack gcr.io/paketo-buildpacks/health-checker:latest \
---builder paketobuildpacks/builder:0.2.433-full
+--builder paketobuildpacks/builder-jammy-full:0.3.316
 
 rm -rf app_server
 

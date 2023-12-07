@@ -11,4 +11,5 @@ rm -rf nginx/cert/ || true
 
 rm -rf nginx/confs/htpasswd_introspect || true
 
-rm -rf authorization-server.com.truststore.p12 || true
+rm -rf .env_readonly || true
+rm -rf .env_read_and_write || true

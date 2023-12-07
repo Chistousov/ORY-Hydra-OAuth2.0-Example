@@ -2,10 +2,11 @@ import { TestBed } from '@angular/core/testing';
 
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 
 import { RegistrationService } from './registration.service';
-import { ErrorService } from '../error/error.service';
+import { ErrorService } from '../error.service';
+import { environment } from '../../environments/environment';
 
 describe('RegistrationService', () => {
   let service: RegistrationService;
@@ -64,7 +65,7 @@ describe('RegistrationService', () => {
         error: done.fail
       });
 
-    const req = httpTestingController.expectOne(`api/registration`);
+    const req = httpTestingController.expectOne(`${environment.apiUrl}/registration`);
 
     req.flush(expectedUserId);
 
@@ -78,7 +79,7 @@ describe('RegistrationService', () => {
   it('registration should be fail', done => {
     // given (instead of when)
 
-    const registrationHttpURL = `api/registration`;
+    const registrationHttpURL = `${environment.apiUrl}/registration`;
 
     const registrationHttpBody: {
       login: string,

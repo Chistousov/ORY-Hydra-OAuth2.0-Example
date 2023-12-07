@@ -10,14 +10,14 @@ import reactor.core.publisher.Mono;
 
 public class CustomServerLogoutSuccessHandler implements ServerLogoutSuccessHandler {
 
-    private static final HttpStatus httpStatus = HttpStatus.NO_CONTENT;
+  private static final HttpStatus httpStatus = HttpStatus.NO_CONTENT;
 
-    @Override
-    public Mono<Void> onLogoutSuccess(WebFilterExchange webFilterExchange, Authentication authentication) {
-		return Mono.fromRunnable(() -> {
-            ServerHttpResponse response = webFilterExchange.getExchange().getResponse();
-            response.setStatusCode(httpStatus);
-		});
-    }
-    
+  @Override
+  public Mono<Void> onLogoutSuccess(WebFilterExchange webFilterExchange, Authentication authentication) {
+    return Mono.fromRunnable(() -> {
+      ServerHttpResponse response = webFilterExchange.getExchange().getResponse();
+      response.setStatusCode(httpStatus);
+    });
+  }
+
 }

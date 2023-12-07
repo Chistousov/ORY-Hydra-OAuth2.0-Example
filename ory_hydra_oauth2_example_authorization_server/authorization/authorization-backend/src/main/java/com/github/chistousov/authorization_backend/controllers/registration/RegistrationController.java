@@ -20,23 +20,21 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class RegistrationController {
 
-    private UserService userService;
+  private UserService userService;
 
-    public RegistrationController(UserService userService) {
-        this.userService = userService;
-    }
+  public RegistrationController(UserService userService) {
+    this.userService = userService;
+  }
 
-    @PostMapping
-    public Mono<ResponseEntity<Long>> postRegistration(@Valid @RequestBody PostRegistrationModel postRegistrationModel){
-    
-        return this.userService
-            .createUser(postRegistrationModel)
-            .map(idUser ->
-                ResponseEntity
-                    .status(HttpStatus.CREATED)
-                    .body(idUser)
-            )
-            .doOnSuccess(el -> log.info("User is created. "));
-    }
+  @PostMapping
+  public Mono<ResponseEntity<Long>> postRegistration(@Valid @RequestBody PostRegistrationModel postRegistrationModel) {
+
+    return this.userService
+        .createUser(postRegistrationModel)
+        .map(idUser -> ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(idUser))
+        .doOnSuccess(el -> log.info("User is created. "));
+  }
 
 }

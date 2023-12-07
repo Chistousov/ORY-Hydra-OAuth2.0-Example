@@ -7,43 +7,39 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 public class AcceptLoginRequestModelTest {
-    
-    @Test
-    @DisplayName("AcceptLoginRequestModel: subject is null")
-    void testConstructorAcceptLoginRequestModel1() {
-        // given (instead of when)
-        
-        // when
 
-        Throwable thrown = catchThrowable(() -> 
-            AcceptLoginRequestModelBuilder
-                .builder()
-                .setSubject(null)
-                .build()
-        );
-        
-        // then (instead of verify)
+  @Test
+  @DisplayName("AcceptLoginRequestModel: subject is null")
+  void testConstructorAcceptLoginRequestModel1() {
+    // given (instead of when)
 
-        assertThat(thrown).hasMessageContaining("Subject not set");
-        
-    }
+    // when
 
-    @Test
-    @DisplayName("AcceptLoginRequestModel: subject is blank")
-    void testConstructorAcceptLoginRequestModel2() {
-        // given (instead of when)
-        
-        // when
+    Throwable thrown = catchThrowable(() -> AcceptLoginRequestModelBuilder
+        .builder()
+        .setSubject(null)
+        .build());
 
-        Throwable thrown = catchThrowable(() -> 
-            AcceptLoginRequestModelBuilder
-                .builder()
-                .setSubject("")
-                .build()
-        );
-        
-        // then (instead of verify)
+    // then (instead of verify)
 
-        assertThat(thrown).hasMessageContaining("Subject not set");
-    }
+    assertThat(thrown).hasMessageContaining("Subject not set");
+
+  }
+
+  @Test
+  @DisplayName("AcceptLoginRequestModel: subject is blank")
+  void testConstructorAcceptLoginRequestModel2() {
+    // given (instead of when)
+
+    // when
+
+    Throwable thrown = catchThrowable(() -> AcceptLoginRequestModelBuilder
+        .builder()
+        .setSubject("")
+        .build());
+
+    // then (instead of verify)
+
+    assertThat(thrown).hasMessageContaining("Subject not set");
+  }
 }

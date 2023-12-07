@@ -9,8 +9,8 @@ import com.github.chistousov.resource_server.jacoco_ignore.ExcludeFromJacocoGene
 @ExcludeFromJacocoGeneratedReport
 public class ResourceServerApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(ResourceServerApplication.class, args);
-	}
+  public static void main(String[] args) {
+    SpringApplication.run(ResourceServerApplication.class, args);
+  }
 
 }

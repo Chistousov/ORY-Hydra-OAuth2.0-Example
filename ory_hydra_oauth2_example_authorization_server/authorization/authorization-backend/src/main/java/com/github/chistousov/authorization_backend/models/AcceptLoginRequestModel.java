@@ -10,28 +10,27 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
 @Getter
-@EqualsAndHashCode( of = { "subject" })
+@EqualsAndHashCode(of = { "subject" })
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AcceptLoginRequestModel {
-    private String subject;
-    
-    private Boolean remember;
-   
-    @JsonProperty("remember_for")
-    private Long rememberFor;
-    
-    private Object context;
+  private String subject;
 
-    public AcceptLoginRequestModel(AcceptLoginRequestModelBuilder acceptLoginRequestModelBuilder) {
-        if(Objects.isNull(acceptLoginRequestModelBuilder.getSubject()) 
-        || acceptLoginRequestModelBuilder.getSubject().isBlank()
-        ) {
-            throw new AcceptLoginRequestModelException("Subject not set");
-        }
+  private Boolean remember;
 
-        this.subject = acceptLoginRequestModelBuilder.getSubject();
-        this.remember = acceptLoginRequestModelBuilder.getRemember();
-        this.rememberFor = acceptLoginRequestModelBuilder.getRememberFor();
-        this.context = acceptLoginRequestModelBuilder.getContextModel();
+  @JsonProperty("remember_for")
+  private Long rememberFor;
+
+  private Object context;
+
+  public AcceptLoginRequestModel(AcceptLoginRequestModelBuilder acceptLoginRequestModelBuilder) {
+    if (Objects.isNull(acceptLoginRequestModelBuilder.getSubject())
+        || acceptLoginRequestModelBuilder.getSubject().isBlank()) {
+      throw new AcceptLoginRequestModelException("Subject not set");
     }
+
+    this.subject = acceptLoginRequestModelBuilder.getSubject();
+    this.remember = acceptLoginRequestModelBuilder.getRemember();
+    this.rememberFor = acceptLoginRequestModelBuilder.getRememberFor();
+    this.context = acceptLoginRequestModelBuilder.getContextModel();
+  }
 }

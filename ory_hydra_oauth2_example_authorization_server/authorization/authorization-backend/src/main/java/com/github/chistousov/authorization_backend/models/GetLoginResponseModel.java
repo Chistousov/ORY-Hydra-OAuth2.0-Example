@@ -19,26 +19,26 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class GetLoginResponseModel {
 
-    private String challenge;
+  private String challenge;
 
-    private Client client;
+  private Client client;
 
-    @JsonProperty("oidc_context")
-    private Object oidcContext;
+  @JsonProperty("oidc_context")
+  private Object oidcContext;
 
-    @JsonProperty("request_url")
-    private String requestUrl;
+  @JsonProperty("request_url")
+  private String requestUrl;
 
-    @JsonProperty("requested_access_token_audience")
-    private List<String> requestedAccessTokenAudience;
+  @JsonProperty("requested_access_token_audience")
+  private List<String> requestedAccessTokenAudience;
 
-    @JsonProperty("requested_scope")
-    private List<String> requestedScope;
+  @JsonProperty("requested_scope")
+  private List<String> requestedScope;
 
-    @JsonProperty("session_id")
-    private String sessionId;
+  @JsonProperty("session_id")
+  private String sessionId;
 
-    private Boolean skip;
-    
-    private String subject;
+  private Boolean skip;
+
+  private String subject;
 }

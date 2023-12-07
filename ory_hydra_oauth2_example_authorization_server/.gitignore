@@ -8,3 +8,6 @@ nginx/cert
 nginx/confs/htpasswd_introspect
 
 authorization-server.com.truststore.p12
+
+.env_readonly
+.env_read_and_write

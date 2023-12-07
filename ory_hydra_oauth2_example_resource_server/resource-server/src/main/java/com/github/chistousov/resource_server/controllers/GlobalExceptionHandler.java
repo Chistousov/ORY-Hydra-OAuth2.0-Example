@@ -1,6 +1,5 @@
 package com.github.chistousov.resource_server.controllers;
 
-
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,49 +26,50 @@ import reactor.core.publisher.Mono;
 @ExcludeFromJacocoGeneratedReport
 public class GlobalExceptionHandler {
 
-    private static final String TEXT_PLAIN_CHARSET_UTF_8 = "text/plain;charset=utf-8";
-    private static final String CONTENT_TYPE = "Content-Type";
+  private static final String TEXT_PLAIN_CHARSET_UTF_8 = "text/plain;charset=utf-8";
+  private static final String CONTENT_TYPE = "Content-Type";
 
-    // invalid model handler
-    @ExceptionHandler(WebExchangeBindException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<List<String>> handleException(WebExchangeBindException e) {
-        var errors = e.getBindingResult()
-                .getAllErrors()
-                .stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.toList());
-        return ResponseEntity.badRequest().body(errors);
+  // invalid model handler
+  @ExceptionHandler(WebExchangeBindException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ResponseEntity<List<String>> handleException(WebExchangeBindException e) {
+    var errors = e.getBindingResult()
+        .getAllErrors()
+        .stream()
+        .map(DefaultMessageSourceResolvable::getDefaultMessage)
+        .collect(Collectors.toList());
+    return ResponseEntity.badRequest().body(errors);
 
-    }
+  }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Mono<Void> illegalArgumentPerfom(ServerHttpRequest req, ServerHttpResponse response, IllegalArgumentException ex){
-        
-        response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
-        response.setStatusCode(HttpStatus.BAD_REQUEST);
-        
-        byte[] bodyResponse = "Request received with incorrect data ".getBytes(StandardCharsets.UTF_8);
-        DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
+  @ExceptionHandler(IllegalArgumentException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public Mono<Void> illegalArgumentPerfom(ServerHttpRequest req, ServerHttpResponse response,
+      IllegalArgumentException ex) {
 
-        return response.writeWith(Flux.just(buffer))
-                    .doOnEach(el -> log.error(req.getPath().toString()+" ", ex));
-        
-    }
+    response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
+    response.setStatusCode(HttpStatus.BAD_REQUEST);
 
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public Mono<Void> commonHandler(ServerHttpRequest req, ServerHttpResponse response, Exception ex){
+    byte[] bodyResponse = "Request received with incorrect data ".getBytes(StandardCharsets.UTF_8);
+    DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
 
-        response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
-        response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-        
-        byte[] bodyResponse = "Error in server ".getBytes(StandardCharsets.UTF_8);
-        DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
+    return response.writeWith(Flux.just(buffer))
+        .doOnEach(el -> log.error(req.getPath().toString() + " ", ex));
 
-        return response.writeWith(Flux.just(buffer))
-            .doOnEach(el -> log.error(req.getPath().toString()+" ", ex));
-    }
-    
+  }
+
+  @ExceptionHandler(Exception.class)
+  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+  public Mono<Void> commonHandler(ServerHttpRequest req, ServerHttpResponse response, Exception ex) {
+
+    response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
+    response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+
+    byte[] bodyResponse = "Error in server ".getBytes(StandardCharsets.UTF_8);
+    DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
+
+    return response.writeWith(Flux.just(buffer))
+        .doOnEach(el -> log.error(req.getPath().toString() + " ", ex));
+  }
+
 }

@@ -48,5 +48,4 @@ describe('GenerationCookieCsrfService', () => {
     expect(actualCookieName).toEqual(expectedCookieName);
     expect(actualCookieValue).toBeTruthy();
   });
-
 });

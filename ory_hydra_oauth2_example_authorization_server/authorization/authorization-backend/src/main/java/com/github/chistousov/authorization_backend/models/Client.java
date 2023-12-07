@@ -1,6 +1,9 @@
 package com.github.chistousov.authorization_backend.models;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.List;
@@ -8,143 +11,149 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Client {
 
-    @JsonProperty("allowed_cors_origins")
-    private List<String> allowedCorsOrigins;
-    
-    private List<String> audience;
-   
-    @JsonProperty("authorization_code_grant_access_token_lifespan")
-    private String authorizationCodeGrantAccessTokenLifespan;
+  @JsonProperty("allowed_cors_origins")
+  private List<String> allowedCorsOrigins;
 
-    @JsonProperty("authorization_code_grant_id_token_lifespan")
-    private String authorizationCodeGrantIdTokenLifespan;
+  private List<String> audience;
 
-    @JsonProperty("authorization_code_grant_refresh_token_lifespan")
-    private String authorizationCodeGrantRefreshTokenLifespan;
+  @JsonProperty("authorization_code_grant_access_token_lifespan")
+  private String authorizationCodeGrantAccessTokenLifespan;
 
-    @JsonProperty("backchannel_logout_session_required")
-    private boolean backchannelLogoutSessionRequired;
+  @JsonProperty("authorization_code_grant_id_token_lifespan")
+  private String authorizationCodeGrantIdTokenLifespan;
 
-    @JsonProperty("backchannel_logout_uri")
-    private String backchannelLogoutUri;
+  @JsonProperty("authorization_code_grant_refresh_token_lifespan")
+  private String authorizationCodeGrantRefreshTokenLifespan;
 
-    @JsonProperty("client_credentials_grant_access_token_lifespan")
-    private String clientCredentialsGrantAccessTokenLifespan;
+  @JsonProperty("backchannel_logout_session_required")
+  private boolean backchannelLogoutSessionRequired;
 
-    @JsonProperty("client_id")
-    private String clientId;
+  @JsonProperty("backchannel_logout_uri")
+  private String backchannelLogoutUri;
 
-    @JsonProperty("client_name")
-    private String clientName;
+  @JsonProperty("client_credentials_grant_access_token_lifespan")
+  private String clientCredentialsGrantAccessTokenLifespan;
 
-    @JsonProperty("client_secret")
-    private String clientSecret;
+  @JsonProperty("client_id")
+  private String clientId;
 
-    @JsonProperty("client_secret_expires_at")
-    private int clientSecretExpiresAt;
+  @JsonProperty("client_name")
+  private String clientName;
 
-    @JsonProperty("client_uri")
-    private String clientUri;
+  @JsonProperty("client_secret")
+  private String clientSecret;
 
-    private List<String> contacts;
+  @JsonProperty("client_secret_expires_at")
+  private int clientSecretExpiresAt;
 
-    @JsonProperty("created_at")
-    private String createdAt;
+  @JsonProperty("client_uri")
+  private String clientUri;
 
-    @JsonProperty("frontchannel_logout_session_required")
-    private boolean frontchannelLogoutSessionRequired;
+  private List<String> contacts;
 
-    @JsonProperty("frontchannel_logout_uri")
-    private String frontchannelLogoutUri;
+  @JsonProperty("created_at")
+  private String createdAt;
 
-    @JsonProperty("grant_types")
-    private List<String> grantTypes;
+  @JsonProperty("frontchannel_logout_session_required")
+  private boolean frontchannelLogoutSessionRequired;
 
-    @JsonProperty("implicit_grant_access_token_lifespan")
-    private String implicitGrantAccessTokenLifespan;
+  @JsonProperty("frontchannel_logout_uri")
+  private String frontchannelLogoutUri;
 
-    @JsonProperty("implicit_grant_id_token_lifespan")
-    private String implicitGrantIdTokenLifespan;
+  @JsonProperty("grant_types")
+  private List<String> grantTypes;
 
-    private Object jwks;
+  @JsonProperty("implicit_grant_access_token_lifespan")
+  private String implicitGrantAccessTokenLifespan;
 
-    @JsonProperty("jwks_uri")
-    private String jwksUri;
+  @JsonProperty("implicit_grant_id_token_lifespan")
+  private String implicitGrantIdTokenLifespan;
 
-    @JsonProperty("jwt_bearer_grant_access_token_lifespan")
-    private String jwtBearerGrantAccessTokenLifespan;
+  private Object jwks;
 
-    @JsonProperty("logo_uri")
-    private String logoUri;
+  @JsonProperty("jwks_uri")
+  private String jwksUri;
 
-    private Object metadata;
+  @JsonProperty("jwt_bearer_grant_access_token_lifespan")
+  private String jwtBearerGrantAccessTokenLifespan;
 
-    private String owner;
+  @JsonProperty("logo_uri")
+  private String logoUri;
 
-    @JsonProperty("password_grant_access_token_lifespan")
-    private String passwordGrantAccessTokenLifespan;
+  private Object metadata;
 
-    @JsonProperty("password_grant_refresh_token_lifespan")
-    private String passwordGrantRefreshTokenLifespan;
+  private String owner;
 
-    @JsonProperty("policy_uri")
-    private String policyUri;
+  @JsonProperty("password_grant_access_token_lifespan")
+  private String passwordGrantAccessTokenLifespan;
 
-    @JsonProperty("post_logout_redirect_uris")
-    private List<String> postLogoutRedirectUris;
+  @JsonProperty("password_grant_refresh_token_lifespan")
+  private String passwordGrantRefreshTokenLifespan;
 
-    @JsonProperty("redirect_uris")
-    private List<String> redirectUris;
+  @JsonProperty("policy_uri")
+  private String policyUri;
 
-    @JsonProperty("refresh_token_grant_access_token_lifespan")
-    private String refreshTokenGrantAccessTokenLifespan;
+  @JsonProperty("post_logout_redirect_uris")
+  private List<String> postLogoutRedirectUris;
 
-    @JsonProperty("refresh_token_grant_id_token_lifespan")
-    private String refreshTokenGrantIdTokenLifespan;
+  @JsonProperty("redirect_uris")
+  private List<String> redirectUris;
 
-    @JsonProperty("refresh_token_grant_refresh_token_lifespan")
-    private String refreshTokenGrantRefreshTokenLifespan;
+  @JsonProperty("refresh_token_grant_access_token_lifespan")
+  private String refreshTokenGrantAccessTokenLifespan;
 
-    @JsonProperty("registration_access_token")
-    private String registrationAccessToken;
+  @JsonProperty("refresh_token_grant_id_token_lifespan")
+  private String refreshTokenGrantIdTokenLifespan;
 
-    @JsonProperty("registration_client_uri")
-    private String registrationClientUri;
+  @JsonProperty("refresh_token_grant_refresh_token_lifespan")
+  private String refreshTokenGrantRefreshTokenLifespan;
 
-    @JsonProperty("request_object_signing_alg")
-    private String requestObjectSigningAlg;
+  @JsonProperty("registration_access_token")
+  private String registrationAccessToken;
 
-    @JsonProperty("request_uris")
-    private List<String> requestUris;
+  @JsonProperty("registration_client_uri")
+  private String registrationClientUri;
 
-    @JsonProperty("response_types")
-    private List<String> responseTypes;
+  @JsonProperty("request_object_signing_alg")
+  private String requestObjectSigningAlg;
 
-    private String scope;
+  @JsonProperty("request_uris")
+  private List<String> requestUris;
 
-    @JsonProperty("sector_identifier_uri")
-    private String sectorIdentifierUri;
+  @JsonProperty("response_types")
+  private List<String> responseTypes;
 
-    @JsonProperty("subject_type")
-    private String subjectType;
+  private String scope;
 
-    @JsonProperty("token_endpoint_auth_method")
-    private String tokenEndpointAuthMethod;
+  @JsonProperty("sector_identifier_uri")
+  private String sectorIdentifierUri;
 
-    @JsonProperty("token_endpoint_auth_signing_alg")
-    private String tokenEndpointAuthSigningAlg;
+  @JsonProperty("skip_consent")
+  private Boolean skipConsent;
 
-    @JsonProperty("tos_uri")
-    private String tosUri;
+  @JsonProperty("subject_type")
+  private String subjectType;
 
-    @JsonProperty("updated_at")
-    private String updatedAt;
+  @JsonProperty("token_endpoint_auth_method")
+  private String tokenEndpointAuthMethod;
 
-    @JsonProperty("userinfo_signed_response_alg")
-    private String userinfoSignedResponseAlg;
+  @JsonProperty("token_endpoint_auth_signing_alg")
+  private String tokenEndpointAuthSigningAlg;
+
+  @JsonProperty("tos_uri")
+  private String tosUri;
+
+  @JsonProperty("updated_at")
+  private String updatedAt;
+
+  @JsonProperty("userinfo_signed_response_alg")
+  private String userinfoSignedResponseAlg;
 }

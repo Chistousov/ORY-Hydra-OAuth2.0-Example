@@ -1,17 +1,18 @@
-import { Component, OnInit, ViewChild, Inject, PLATFORM_ID, OnDestroy } from '@angular/core';
-import { ChartConfiguration, ChartType } from 'chart.js';
-import { BaseChartDirective } from 'ng2-charts';
-
-import { isPlatformBrowser } from "@angular/common";
-import { AppService } from '../app.service';
+import { Component, Inject, PLATFORM_ID, OnDestroy } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Observable, Subject, first, map, takeUntil } from 'rxjs';
+import { ChartConfiguration, ChartType } from 'chart.js';
+import { AppService } from '../app.service';
+import { NgChartsModule } from 'ng2-charts';
 
 @Component({
   selector: 'app-line-chart',
+  standalone: true,
+  imports: [CommonModule, NgChartsModule],
   templateUrl: './line-chart.component.html',
-  styleUrls: ['./line-chart.component.scss']
+  styleUrl: './line-chart.component.scss'
 })
-export class LineChartComponent implements OnInit, OnDestroy {
+export class LineChartComponent implements OnDestroy {
 
   // для очистки памяти rxjs
   private readonly onDestroy = new Subject<void>();
@@ -78,5 +79,4 @@ export class LineChartComponent implements OnInit, OnDestroy {
     this.onDestroy.next();
     this.onDestroy.complete();
   }
-
 }

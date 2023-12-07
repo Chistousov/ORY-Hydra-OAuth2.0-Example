@@ -35,4 +35,3 @@ server:
   forward-headers-strategy: framework
   error:
     include-stacktrace: never
-    

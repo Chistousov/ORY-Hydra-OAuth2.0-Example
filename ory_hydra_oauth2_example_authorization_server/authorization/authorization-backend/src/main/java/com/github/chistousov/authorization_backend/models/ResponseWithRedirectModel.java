@@ -18,7 +18,7 @@ import lombok.ToString;
 @EqualsAndHashCode
 @ToString
 public class ResponseWithRedirectModel {
-    
-    @JsonProperty("redirect_to")
-    private String redirectTo;
+
+  @JsonProperty("redirect_to")
+  private String redirectTo;
 }

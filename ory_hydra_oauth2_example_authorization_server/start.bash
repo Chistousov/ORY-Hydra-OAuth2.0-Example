@@ -14,16 +14,6 @@ if [ ! -f .env ]; then
     HYDRA_INTROSPECT_USER="user_introspect"
     HYDRA_INTROSPECT_PASSWORD="hUq7Mw3fr4lFjnHQtoJucgDdAV58NbAOvuGN2OfB"
 
-    # OAuth 2.0 Clients
-    CLIENT_READONLY_CLIENT_ID="someClientReadonly"
-    CLIENT_READONLY_CLIENT_SECRET="someClientReadonlySecret"
-    
-    CLIENT_WRITE_AND_READ_CLIENT_ID="someClientReadAndWrite"
-    CLIENT_WRITE_AND_READ_CLIENT_SECRET="someClientReadAndWriteSecret"
-
-    CLIENT_TRUSTSTORE_KEYSTORE_JAVA_NAME="authorization-server.com.truststore.p12"
-    CLIENT_TRUSTSTORE_KEYSTORE_JAVA_PASS="somePass"
-
     # ------------------------------------------
 
     HYDRA_DEPENDS_ON_MIGRATE="service_completed_successfully"
@@ -48,36 +38,31 @@ if [ ! -f .env ]; then
     docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d --no-recreate --wait
 
     echo "Create OAuth 2.0 client for only read"
-    docker compose -f docker-compose.yaml -f docker-compose.prod.yaml exec ory-hydra-oauth2-example-authorization-server-hydra \
+    code_client_readonly=$(docker compose -f docker-compose.yaml -f docker-compose.prod.yaml exec ory-hydra-oauth2-example-authorization-server-hydra \
     hydra create client \
     --endpoint http://127.0.0.1:4445 \
     --grant-type authorization_code,refresh_token \
     --response-type code,id_token \
     --format json \
     --scope openid --scope offline --scope read \
-    --name ${CLIENT_READONLY_CLIENT_ID} \
-    --secret ${CLIENT_READONLY_CLIENT_SECRET} \
-    --redirect-uri https://client-readonly.com/login/oauth2/code/client-readonly
+    --redirect-uri https://client-readonly.com/api/login/oauth2/code/client-readonly)
 
     echo "Create OAuth 2.0 client for read and write"
-    docker compose -f docker-compose.yaml -f docker-compose.prod.yaml exec ory-hydra-oauth2-example-authorization-server-hydra \
+    code_client_read_and_write=$(docker compose -f docker-compose.yaml -f docker-compose.prod.yaml exec ory-hydra-oauth2-example-authorization-server-hydra \
     hydra create client \
     --endpoint http://127.0.0.1:4445 \
     --grant-type authorization_code,refresh_token \
     --response-type code,id_token \
     --format json \
     --scope openid --scope offline --scope read --scope write \
-    --name ${CLIENT_WRITE_AND_READ_CLIENT_ID} \
-    --secret ${CLIENT_WRITE_AND_READ_CLIENT_SECRET} \
-    --redirect-uri https://client-write-and-read.com/login/oauth2/code/client-write-and-read
+    --redirect-uri https://client-write-and-read.com/api/login/oauth2/code/client-write-and-read)
 
-    # for java oauth 2.0 client
-    keytool -importcert \
-        -keystore ${CLIENT_TRUSTSTORE_KEYSTORE_JAVA_NAME} \
-        -storepass ${CLIENT_TRUSTSTORE_KEYSTORE_JAVA_PASS} \
-        -alias serverCATrust \
-        -file CAForNginx/ca.crt \
-        -noprompt
+    # OAuth 2.0 Clients
+    echo CLIENT_READONLY_CLIENT_ID=$(echo $code_client_readonly | jq -r '.client_id') >> .env_readonly
+    echo CLIENT_READONLY_CLIENT_SECRET=$(echo $code_client_readonly | jq -r '.client_secret') >> .env_readonly
+
+    echo CLIENT_WRITE_AND_READ_CLIENT_ID=$(echo $code_client_read_and_write | jq -r '.client_id') >> .env_read_and_write
+    echo CLIENT_WRITE_AND_READ_CLIENT_SECRET=$(echo $code_client_read_and_write | jq -r '.client_secret') >> .env_read_and_write
 
 else
 

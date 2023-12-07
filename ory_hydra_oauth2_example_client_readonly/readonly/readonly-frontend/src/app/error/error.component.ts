@@ -1,13 +1,18 @@
 import { Component, OnDestroy } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { first, map, Observable, Subject, takeUntil } from 'rxjs';
+import { CommonModule } from '@angular/common';
+import { Observable, Subject, first, map, takeUntil } from 'rxjs';
 import { ErrorOnPageModel } from '../models/error-on-page.model';
+import { ActivatedRoute } from '@angular/router';
+
+import {MatButtonModule} from '@angular/material/button';
 import { WindowService } from '../window.service';
 
 @Component({
   selector: 'app-error',
+  standalone: true,
+  imports: [CommonModule, MatButtonModule],
   templateUrl: './error.component.html',
-  styleUrls: ['./error.component.scss']
+  styleUrl: './error.component.scss'
 })
 export class ErrorComponent implements OnDestroy {
   // для очистки памяти rxjs

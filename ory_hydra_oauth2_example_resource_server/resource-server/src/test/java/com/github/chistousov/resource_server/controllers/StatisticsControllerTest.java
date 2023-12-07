@@ -28,58 +28,58 @@ import reactor.core.publisher.Flux;
 @Import(SpringSecurityConfiguration.class)
 public class StatisticsControllerTest {
 
-	@DynamicPropertySource
-	public static void settings(DynamicPropertyRegistry registry)
-			throws UnsupportedEncodingException {
+  @DynamicPropertySource
+  public static void settings(DynamicPropertyRegistry registry)
+      throws UnsupportedEncodingException {
 
-		registry.add("spring.security.oauth2.resourceserver.opaquetoken.client-id", () -> "1");
-		registry.add("spring.security.oauth2.resourceserver.opaquetoken.client-secret", () -> "1");
-		registry.add("spring.security.oauth2.resourceserver.opaquetoken.introspection-uri", () -> "1");
+    registry.add("spring.security.oauth2.resourceserver.opaquetoken.client-id", () -> "1");
+    registry.add("spring.security.oauth2.resourceserver.opaquetoken.client-secret", () -> "1");
+    registry.add("spring.security.oauth2.resourceserver.opaquetoken.introspection-uri", () -> "1");
 
-	}
+  }
 
-	@Autowired
-	private WebTestClient thisServerWebTestClient;
+  @Autowired
+  private WebTestClient thisServerWebTestClient;
 
-	@MockBean
-	private PointService pointService;
+  @MockBean
+  private PointService pointService;
 
-	@Test
-	@DisplayName("get statistics")
-	void testGetStatistics() {
+  @Test
+  @DisplayName("get statistics")
+  void testGetStatistics() {
 
-		// given (instead of when)
+    // given (instead of when)
 
-		final List<Point> points = List.of(
-				new Point(1, 2.3),
-				new Point(2, 1.7),
-				new Point(3, 5.4),
-				new Point(4, 6.8),
-				new Point(5, 4.2),
-				new Point(6, 3.6));
+    final List<Point> points = List.of(
+        new Point(1, 2.3),
+        new Point(2, 1.7),
+        new Point(3, 5.4),
+        new Point(4, 6.8),
+        new Point(5, 4.2),
+        new Point(6, 3.6));
 
-		final Flux<Point> pointsFlux = Flux.fromIterable(points);
+    final Flux<Point> pointsFlux = Flux.fromIterable(points);
 
-		given(pointService.getPoints()).willReturn(pointsFlux);
+    given(pointService.getPoints()).willReturn(pointsFlux);
 
-		// when
+    // when
 
-		thisServerWebTestClient
-				.mutateWith(SecurityMockServerConfigurers.mockOpaqueToken()
-						.authorities(new SimpleGrantedAuthority("SCOPE_read")))
-				.get()
-				.uri("/statistics")
-				.exchange()
-				.expectStatus()
-				.isOk()
-				.expectBodyList(Point.class)
-				.isEqualTo(points);
+    thisServerWebTestClient
+        .mutateWith(SecurityMockServerConfigurers.mockOpaqueToken()
+            .authorities(new SimpleGrantedAuthority("SCOPE_read")))
+        .get()
+        .uri("/statistics")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBodyList(Point.class)
+        .isEqualTo(points);
 
-		// then (instead of verify
+    // then (instead of verify
 
-		then(pointService)
-				.should()
-				.getPoints();
-	}
+    then(pointService)
+        .should()
+        .getPoints();
+  }
 
 }

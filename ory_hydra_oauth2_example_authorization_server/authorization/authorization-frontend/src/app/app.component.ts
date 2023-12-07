@@ -1,8 +1,12 @@
+import { CommonModule } from '@angular/common';
 import { Component, HostListener, QueryList, ViewChildren } from '@angular/core';
 import { MatTooltip } from '@angular/material/tooltip';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
+  standalone: true,
+  imports: [CommonModule, RouterOutlet],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })

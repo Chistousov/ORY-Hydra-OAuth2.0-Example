@@ -13,19 +13,17 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/calculate")
 @Slf4j
 public class CalculateController {
-    
-    private PointService pointService;
 
-    public CalculateController(PointService pointService){
-        this.pointService = pointService;
-    }
+  private PointService pointService;
 
-    @Operation(
-        summary = "Some calculate"
-    )
-    @PutMapping
-    public void calculate(){
-        this.pointService.calculateNewPoint();
-        log.info("calculate new point");
-    }
+  public CalculateController(PointService pointService) {
+    this.pointService = pointService;
+  }
+
+  @Operation(summary = "Some calculate")
+  @PutMapping
+  public void calculate() {
+    this.pointService.calculateNewPoint();
+    log.info("calculate new point");
+  }
 }

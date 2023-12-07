@@ -10,10 +10,10 @@ import com.github.chistousov.authorization_backend.dao.entities.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    @Procedure("User.createUser")
-    Long createUser(
-            @Param("login") String login,
-            @Param("password") String password,
-            @Param("org_name") String orgName);
+  @Procedure("User.createUser")
+  Long createUser(
+      @Param("login") String login,
+      @Param("password") String password,
+      @Param("org_name") String orgName);
 
 }

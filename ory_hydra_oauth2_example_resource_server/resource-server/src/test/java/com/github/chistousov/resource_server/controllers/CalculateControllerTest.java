@@ -21,43 +21,43 @@ import com.github.chistousov.resource_server.services.PointService;
 @WebFluxTest
 @Import(SpringSecurityConfiguration.class)
 public class CalculateControllerTest {
-   
-	@DynamicPropertySource
-	public static void settings(DynamicPropertyRegistry registry)
-			throws UnsupportedEncodingException {
 
-		registry.add("spring.security.oauth2.resourceserver.opaquetoken.client-id", () -> "1");
-		registry.add("spring.security.oauth2.resourceserver.opaquetoken.client-secret", () -> "1");
-		registry.add("spring.security.oauth2.resourceserver.opaquetoken.introspection-uri", () -> "1");
+  @DynamicPropertySource
+  public static void settings(DynamicPropertyRegistry registry)
+      throws UnsupportedEncodingException {
 
-	}
+    registry.add("spring.security.oauth2.resourceserver.opaquetoken.client-id", () -> "1");
+    registry.add("spring.security.oauth2.resourceserver.opaquetoken.client-secret", () -> "1");
+    registry.add("spring.security.oauth2.resourceserver.opaquetoken.introspection-uri", () -> "1");
 
-	@Autowired
-	private WebTestClient thisServerWebTestClient;
+  }
 
-	@MockBean
-	private PointService pointService;
+  @Autowired
+  private WebTestClient thisServerWebTestClient;
 
-	@Test
-	@DisplayName("calculate")
-    void testPostCalculate() {
-		// given (instead of when)
+  @MockBean
+  private PointService pointService;
 
-		// when
+  @Test
+  @DisplayName("calculate")
+  void testPostCalculate() {
+    // given (instead of when)
 
-		thisServerWebTestClient
-				.mutateWith(SecurityMockServerConfigurers.mockOpaqueToken()
-						.authorities(new SimpleGrantedAuthority("SCOPE_write")))
-				.put()
-				.uri("/calculate")
-				.exchange()
-				.expectStatus()
-                .isOk();
+    // when
 
-		// then (instead of verify
+    thisServerWebTestClient
+        .mutateWith(SecurityMockServerConfigurers.mockOpaqueToken()
+            .authorities(new SimpleGrantedAuthority("SCOPE_write")))
+        .put()
+        .uri("/calculate")
+        .exchange()
+        .expectStatus()
+        .isOk();
 
-		then(pointService)
-				.should()
-				.calculateNewPoint();
-    }
+    // then (instead of verify
+
+    then(pointService)
+        .should()
+        .calculateNewPoint();
+  }
 }

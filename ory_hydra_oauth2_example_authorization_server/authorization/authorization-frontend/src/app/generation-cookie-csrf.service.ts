@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { CookieService } from './cookie.service';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class GenerationCookieCsrfService {
 
   readonly xsrfTokenCookieName = "XSRF-TOKEN"; 

@@ -5,6 +5,7 @@ import { Subject, first, takeUntil } from 'rxjs';
 import { RegistrationService } from './registration.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { GenerationCookieCsrfService } from '../generation-cookie-csrf.service';
+import { MatSnackBar, MatSnackBarConfig } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-registration',
@@ -45,14 +46,22 @@ export class RegistrationComponent implements AfterViewInit, OnDestroy {
   get repeatPassword() { return this.registrationFormGroup.controls.repeatPassword }
   get orgName() { return this.registrationFormGroup.controls.orgName }
 
+  // show or hide password
   // показывать или скрывать пароль
   passwordShowFlag: boolean = false;
+  passwordShowFlag2: boolean = false;
 
+  // waiting for a response from the server
   // ожидание ответа от сервера
   getResponseFromServerFlag: boolean = false;
+  // error from server
   // ошибка от сервера
   errorOnServer!: string | undefined;
 
+  readonly actionCloseButtonName = 'CLOSE';
+  readonly confOptionsSnackbar: MatSnackBarConfig<any> = {
+    duration: 5000
+  };
 
   @HostListener('window:keydown.enter', ['$event']) onKeydownEnterHandler(event: KeyboardEvent) { 
     this.submit();
@@ -81,6 +90,7 @@ export class RegistrationComponent implements AfterViewInit, OnDestroy {
   constructor(
     private renderer: Renderer2,
     private generationCookieCsrfService: GenerationCookieCsrfService,
+    private matSnackBar: MatSnackBar,
     private registationService: RegistrationService
   ) { }
 
@@ -99,6 +109,17 @@ export class RegistrationComponent implements AfterViewInit, OnDestroy {
     this.passwordShowFlag = !this.passwordShowFlag;
 
     if (this.passwordShowFlag) {
+      tooltip.message = 'Hide Password';
+    } else {
+      tooltip.message = 'Show Password';
+    }
+    tooltip.show();
+  }
+
+  passwordDisplay2(tooltip: MatTooltip) {
+    this.passwordShowFlag2 = !this.passwordShowFlag2;
+
+    if (this.passwordShowFlag2) {
       tooltip.message = 'Hide Password';
     } else {
       tooltip.message = 'Show Password';
@@ -128,6 +149,13 @@ export class RegistrationComponent implements AfterViewInit, OnDestroy {
           
           // ответ получили
           this.getResponseFromServerFlag = false;
+
+          this.registrationFormGroup.reset();
+          setTimeout(() => {
+            this.focusLogin();
+          }, 5);
+
+          this.matSnackBar.open("Success", this.actionCloseButtonName, this.confOptionsSnackbar);
         },
         error: (error: HttpErrorResponse) => {
 

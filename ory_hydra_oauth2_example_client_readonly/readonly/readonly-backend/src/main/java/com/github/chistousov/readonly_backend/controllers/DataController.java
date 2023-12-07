@@ -20,41 +20,38 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/data")
 public class DataController {
 
-	private WebClient webClient;
-	private URI locationResourceServer;
+  private WebClient webClient;
+  private URI locationResourceServer;
 
-	private URI locationStatistics;
+  private URI locationStatistics;
 
-	public DataController(WebClient webClient, Environment env){
-		this.webClient = webClient;
-		this.locationResourceServer = URI.create(
-			env.getRequiredProperty(
-                "application.resource-server")
-		);
+  public DataController(WebClient webClient, Environment env) {
+    this.webClient = webClient;
+    this.locationResourceServer = URI.create(
+        env.getRequiredProperty(
+            "application.resource-server"));
 
-		this.locationStatistics = UriComponentsBuilder
-            .fromUri(locationResourceServer)
-			.pathSegment("api", "statistics")
-            .build()
-            .toUri();
-	}
+    this.locationStatistics = UriComponentsBuilder
+        .fromUri(locationResourceServer)
+        .pathSegment("api", "statistics")
+        .build()
+        .toUri();
+  }
 
-	
+  @GetMapping()
+  public Mono<ResponseEntity<Object>> getStatistics(
+      @RegisteredOAuth2AuthorizedClient("client-readonly") OAuth2AuthorizedClient authorizedClient,
+      WebSession webSession) {
 
-	@GetMapping()
-	public Mono<ResponseEntity<Object>> getStatistics(
-			@RegisteredOAuth2AuthorizedClient("client-readonly") OAuth2AuthorizedClient authorizedClient,
-			WebSession webSession) {
+    return Mono.just(
+        ResponseEntity.ok(webClient.get()
+            .uri(locationStatistics)
+            .attributes(
+                ServerOAuth2AuthorizedClientExchangeFilterFunction
+                    .oauth2AuthorizedClient(
+                        authorizedClient))
+            .retrieve()
+            .bodyToMono(Object.class)));
 
-		return Mono.just(
-				ResponseEntity.ok(webClient.get()
-						.uri(locationStatistics)
-						.attributes(
-								ServerOAuth2AuthorizedClientExchangeFilterFunction
-										.oauth2AuthorizedClient(
-												authorizedClient))
-						.retrieve()
-						.bodyToMono(Object.class)));
-
-	}
+  }
 }

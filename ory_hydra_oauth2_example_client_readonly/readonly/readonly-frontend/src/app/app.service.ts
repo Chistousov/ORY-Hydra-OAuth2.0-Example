@@ -1,15 +1,26 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable, catchError, throwError } from 'rxjs';
 import { Point } from './models/point.model';
-import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { environment } from '../environments/environment';
+import { ErrorService } from './error.service';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class AppService {
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private errorService: ErrorService) {}
 
   getData(): Observable<Point[]> {
-    return this.http.get<Point[]>(`${environment.apiUrl}/data`);
+    return this.http.get<Point[]>(`${environment.apiUrl}/data`)
+      .pipe(
+        catchError(this.errorHandler.bind(this))
+      );
+  }
+
+  private errorHandler(error: HttpErrorResponse) {
+    this.errorService.handle(error.error)
+    return throwError(() => error)
   }
 }

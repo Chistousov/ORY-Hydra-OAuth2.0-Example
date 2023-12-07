@@ -2,10 +2,12 @@ import { Injectable } from '@angular/core';
 import { CookieService } from './cookie.service';
 import { Router } from '@angular/router';
 
-@Injectable()
+@Injectable({
+  providedIn: 'root'
+})
 export class SaveFutureRedirectService {
 
-  private readonly urlCookieName = "CURRENT_URI";
+  readonly urlCookieName = "CURRENT_URI";
 
   constructor(
     private cookieService: CookieService,

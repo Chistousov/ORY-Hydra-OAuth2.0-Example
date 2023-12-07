@@ -26,71 +26,69 @@ import com.github.chistousov.readonly_backend.security.filters.IsAuthenticatedCh
 
 @EnableWebFluxSecurity
 public class SpringSecurityConfiguration {
-	
-	private String pathFrontendErrorPage;
-	private String pathReauthenticationLocation;
 
-    public SpringSecurityConfiguration(Environment env) {
+  private String pathFrontendErrorPage;
+  private String pathReauthenticationLocation;
 
-        String clientId = env.getRequiredProperty(
-                "spring.security.oauth2.client.registration.client-readonly.client-id");
+  public SpringSecurityConfiguration(Environment env) {
 
-        this.pathReauthenticationLocation = Arrays.asList(
-                "oauth2",
-                "authorization",
-                clientId)
-                .stream()
-                .collect(Collectors.joining("/"));
+    String clientId = env.getRequiredProperty(
+        "spring.security.oauth2.client.registration.client-readonly.client-id");
 
-        this.pathFrontendErrorPage = env.getRequiredProperty(
-                "application.frontend.error-oauth2-page");
+    this.pathReauthenticationLocation = Arrays.asList(
+        "oauth2",
+        "authorization",
+        clientId)
+        .stream()
+        .collect(Collectors.joining("/"));
 
-        
+    this.pathFrontendErrorPage = env.getRequiredProperty(
+        "application.frontend.error-oauth2-page");
 
-    }
+  }
 
-    @Bean
-    public SecurityWebFilterChain pkceFilterChain(ServerHttpSecurity http,
-            ServerOAuth2AuthorizationRequestResolver resolver) throws JsonProcessingException {
-		return http.authorizeExchange(
-				ex -> ex.pathMatchers("/actuator/health")
-						.permitAll()
-						// все запросы должны быть аутентифицированы
-						.anyExchange()
-						.authenticated()
+  @Bean
+  public SecurityWebFilterChain pkceFilterChain(ServerHttpSecurity http,
+      ServerOAuth2AuthorizationRequestResolver resolver) throws JsonProcessingException {
+    return http.authorizeExchange(
+        ex -> ex.pathMatchers("/actuator/health")
+            .permitAll()
+            // все запросы должны быть аутентифицированы
+            .anyExchange()
+            .authenticated()
 
-				)
-                // CSRF для SPA приложений
-                .csrf(csrf -> csrf.csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse()))
-                .oauth2Login()
-                .authorizationRequestResolver(resolver)
-                .authenticationFailureHandler(
-                        new CustomServerAuthenticationFailureHandler(pathFrontendErrorPage, pathReauthenticationLocation))
-                .and()
-                // конфигурация logout
-                .logout()
-                .logoutSuccessHandler(new CustomServerLogoutSuccessHandler())
-                .and()
-                .addFilterBefore(new IsAuthenticatedCheckWebFilter(), SecurityWebFiltersOrder.HTTP_BASIC)
-                .addFilterBefore(new AuthenticateFrontendWebFilter(), SecurityWebFiltersOrder.HTTP_BASIC)
-                .build();
-    }
+    )
+        // CSRF для SPA приложений
+        .csrf(csrf -> csrf.csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse()))
+        .oauth2Login()
+        .authorizationRequestResolver(resolver)
+        .authenticationFailureHandler(
+            new CustomServerAuthenticationFailureHandler(pathFrontendErrorPage, pathReauthenticationLocation))
+        .and()
+        // конфигурация logout
+        .logout()
+        .logoutSuccessHandler(new CustomServerLogoutSuccessHandler())
+        .and()
+        .addFilterBefore(new IsAuthenticatedCheckWebFilter(), SecurityWebFiltersOrder.HTTP_BASIC)
+        .addFilterBefore(new AuthenticateFrontendWebFilter(), SecurityWebFiltersOrder.HTTP_BASIC)
+        .build();
+  }
 
-    @Bean
-    public ServerOAuth2AuthorizationRequestResolver pkceResolver(ReactiveClientRegistrationRepository repo) {
-        var resolver = new DefaultServerOAuth2AuthorizationRequestResolver(repo);
-        resolver.setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce());
-        return resolver;
-    }
+  @Bean
+  public ServerOAuth2AuthorizationRequestResolver pkceResolver(ReactiveClientRegistrationRepository repo) {
+    var resolver = new DefaultServerOAuth2AuthorizationRequestResolver(repo);
+    resolver.setAuthorizationRequestCustomizer(OAuth2AuthorizationRequestCustomizers.withPkce());
+    return resolver;
+  }
 
-    @Bean
-    WebClient webClient(ReactiveClientRegistrationRepository clientRegistrations,
-            ServerOAuth2AuthorizedClientRepository authorizedClients) {
-        ServerOAuth2AuthorizedClientExchangeFilterFunction oauth = new ServerOAuth2AuthorizedClientExchangeFilterFunction(
-                clientRegistrations,
-                authorizedClients);
-        return WebClient.builder()
-                .filter(oauth)
-                .build();
-    }
+  @Bean
+  WebClient webClient(ReactiveClientRegistrationRepository clientRegistrations,
+      ServerOAuth2AuthorizedClientRepository authorizedClients) {
+    ServerOAuth2AuthorizedClientExchangeFilterFunction oauth = new ServerOAuth2AuthorizedClientExchangeFilterFunction(
+        clientRegistrations,
+        authorizedClients);
+    return WebClient.builder()
+        .filter(oauth)
+        .build();
+  }
 }

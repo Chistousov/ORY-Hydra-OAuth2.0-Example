@@ -27,59 +27,59 @@ import reactor.core.publisher.Mono;
 
 public class IsAuthenticatedCheckWebFilter implements WebFilter {
 
-    private static final String AUTHENTICATION_FRONTEND = "/authenticate-frontend";
+  private static final String AUTHENTICATION_FRONTEND = "/authenticate-frontend";
 
-    private ServerWebExchangeMatcher requiresLoggedInMatcher = ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET,
-            "/logged-in");
+  private ServerWebExchangeMatcher requiresLoggedInMatcher = ServerWebExchangeMatchers.pathMatchers(HttpMethod.GET,
+      "/logged-in");
 
-    private String json;
+  private String json;
 
-    public IsAuthenticatedCheckWebFilter() throws JsonProcessingException {
-        Map<String, String> payload = new HashMap<>();
-        payload.put("redirect_to", AUTHENTICATION_FRONTEND);
+  public IsAuthenticatedCheckWebFilter() throws JsonProcessingException {
+    Map<String, String> payload = new HashMap<>();
+    payload.put("redirect_to", AUTHENTICATION_FRONTEND);
 
-        json = new ObjectMapper().writeValueAsString(payload);
-    }
+    json = new ObjectMapper().writeValueAsString(payload);
+  }
 
-    @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        // проверяем есть аутентификация и авторизация
-        
-        // соответствует URI /logged-in
-        return this.requiresLoggedInMatcher.matches(exchange)
-                .filter(MatchResult::isMatch)
-                // request не соответствует /logged-in, тогда пропускаем
-                .switchIfEmpty(chain.filter(exchange).then(Mono.empty()))
-                // есть ли контекст безопасности?
-                .flatMap(matchResult -> ReactiveSecurityContextHolder
-                        .getContext()
-                        // нету констекста безопасности значит создаем фиктивный объект
-                        .switchIfEmpty(Mono.just(new SecurityContextImpl())))
-                .flatMap(securityContext -> {
-                    Authentication authentication = securityContext.getAuthentication();
-                    // нету констекста безопасности или не аутентифицирован
-                    if (authentication == null || !authentication.isAuthenticated()) {
+  @Override
+  public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+    // проверяем есть аутентификация и авторизация
 
-                        return Mono.defer(() -> {
-                            ServerHttpResponse response = exchange.getResponse();
-                            response.setStatusCode(HttpStatus.UNAUTHORIZED);
-                            response.getHeaders().setContentType(MediaType.TEXT_PLAIN);
+    // соответствует URI /logged-in
+    return this.requiresLoggedInMatcher.matches(exchange)
+        .filter(MatchResult::isMatch)
+        // request не соответствует /logged-in, тогда пропускаем
+        .switchIfEmpty(chain.filter(exchange).then(Mono.empty()))
+        // есть ли контекст безопасности?
+        .flatMap(matchResult -> ReactiveSecurityContextHolder
+            .getContext()
+            // нету констекста безопасности значит создаем фиктивный объект
+            .switchIfEmpty(Mono.just(new SecurityContextImpl())))
+        .flatMap(securityContext -> {
+          Authentication authentication = securityContext.getAuthentication();
+          // нету констекста безопасности или не аутентифицирован
+          if (authentication == null || !authentication.isAuthenticated()) {
 
-                            DataBuffer dataBuffer = response.bufferFactory()
-                                    .wrap(json.getBytes(StandardCharsets.UTF_8));
+            return Mono.defer(() -> {
+              ServerHttpResponse response = exchange.getResponse();
+              response.setStatusCode(HttpStatus.UNAUTHORIZED);
+              response.getHeaders().setContentType(MediaType.TEXT_PLAIN);
 
-                            return response.writeAndFlushWith(Mono.just(Mono.just(dataBuffer)))
-                                    .doOnError(ex -> DataBufferUtils.release(dataBuffer));
-                        });
-                    }
+              DataBuffer dataBuffer = response.bufferFactory()
+                  .wrap(json.getBytes(StandardCharsets.UTF_8));
 
-                    // иначе 204 - все хорошо!
-                    return Mono.fromRunnable(() -> {
-                        ServerHttpResponse response = exchange.getResponse();
-                        response.setStatusCode(HttpStatus.NO_CONTENT);
-                        response.getHeaders().setContentType(MediaType.TEXT_PLAIN);
-                    });
-                });
-    }
+              return response.writeAndFlushWith(Mono.just(Mono.just(dataBuffer)))
+                  .doOnError(ex -> DataBufferUtils.release(dataBuffer));
+            });
+          }
+
+          // иначе 204 - все хорошо!
+          return Mono.fromRunnable(() -> {
+            ServerHttpResponse response = exchange.getResponse();
+            response.setStatusCode(HttpStatus.NO_CONTENT);
+            response.getHeaders().setContentType(MediaType.TEXT_PLAIN);
+          });
+        });
+  }
 
 }

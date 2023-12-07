@@ -1,6 +1,5 @@
 package com.github.chistousov.write_and_read_backend.controllers;
 
-
 import java.net.URI;
 
 import org.springframework.core.env.Environment;
@@ -21,39 +20,38 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/change")
 public class CalculateController {
 
-	private WebClient webClient;
-	private URI locationResourceServer;
+  private WebClient webClient;
+  private URI locationResourceServer;
 
-	private URI locationCalculate;
+  private URI locationCalculate;
 
-	public CalculateController(WebClient webClient, Environment env){
-		this.webClient = webClient;
-		this.locationResourceServer = URI.create(
-			env.getRequiredProperty(
-                "application.resource-server")
-		);
+  public CalculateController(WebClient webClient, Environment env) {
+    this.webClient = webClient;
+    this.locationResourceServer = URI.create(
+        env.getRequiredProperty(
+            "application.resource-server"));
 
-		this.locationCalculate = UriComponentsBuilder
-            .fromUri(locationResourceServer)
-			.pathSegment("api", "calculate")
-            .build()
-            .toUri();
-	}
+    this.locationCalculate = UriComponentsBuilder
+        .fromUri(locationResourceServer)
+        .pathSegment("api", "calculate")
+        .build()
+        .toUri();
+  }
 
-	@PutMapping
-	public Mono<ResponseEntity<Object>> calculate(
-			@RegisteredOAuth2AuthorizedClient("client-write-and-read") OAuth2AuthorizedClient authorizedClient,
-			WebSession webSession) {
+  @PutMapping
+  public Mono<ResponseEntity<Object>> calculate(
+      @RegisteredOAuth2AuthorizedClient("client-write-and-read") OAuth2AuthorizedClient authorizedClient,
+      WebSession webSession) {
 
-		return Mono.just(
-				ResponseEntity.ok(webClient.put()
-						.uri(locationCalculate)
-						.attributes(
-								ServerOAuth2AuthorizedClientExchangeFilterFunction
-										.oauth2AuthorizedClient(
-												authorizedClient))
-						.retrieve()
-						.bodyToMono(Object.class)));
+    return Mono.just(
+        ResponseEntity.ok(webClient.put()
+            .uri(locationCalculate)
+            .attributes(
+                ServerOAuth2AuthorizedClientExchangeFilterFunction
+                    .oauth2AuthorizedClient(
+                        authorizedClient))
+            .retrieve()
+            .bodyToMono(Object.class)));
 
-	}
+  }
 }

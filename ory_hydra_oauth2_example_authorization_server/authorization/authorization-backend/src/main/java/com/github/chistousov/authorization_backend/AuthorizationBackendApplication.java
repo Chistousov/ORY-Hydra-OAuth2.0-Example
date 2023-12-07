@@ -9,8 +9,8 @@ import com.github.chistousov.authorization_backend.jacoco_ignore.ExcludeFromJaco
 @ExcludeFromJacocoGeneratedReport
 public class AuthorizationBackendApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(AuthorizationBackendApplication.class, args);
-	}
+  public static void main(String[] args) {
+    SpringApplication.run(AuthorizationBackendApplication.class, args);
+  }
 
 }

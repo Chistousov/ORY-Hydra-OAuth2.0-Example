@@ -7,7 +7,13 @@ server.use(middlewares);
 
 server.get('/logged-in', (req, res) => {
   res.status(401).jsonp({
-    redirect_to: "https://ya.ru"
+    redirect_to: "/somesome"
+  })
+})
+
+server.get('/somesome', (req, res) => {
+  res.status(200).jsonp({
+    "test": "aaaaaaaaaaaaaaaaaaaaaaaa!"
   })
 })
 

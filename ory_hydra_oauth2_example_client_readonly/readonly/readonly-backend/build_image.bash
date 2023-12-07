@@ -8,10 +8,10 @@ export REPO_IMAGE="chistousov"
 export PROJECT_NAME="ory-hydra-oauth2-example-client-readonly-backend"
 export VERSION="1.0.0"
 
-docker pull paketobuildpacks/builder:0.3.280-base
+docker pull paketobuildpacks/builder-jammy-full:0.3.316
 
 ./gradlew clean test
-./gradlew bootBuildImage --builder=paketobuildpacks/builder:0.3.280-base
+./gradlew bootBuildImage --builder=paketobuildpacks/builder-jammy-full:0.3.316
 
 # publish in docker hub 
 # docker login

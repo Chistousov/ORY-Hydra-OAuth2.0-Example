@@ -19,62 +19,63 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class CustomServerAuthenticationFailureHandler implements ServerAuthenticationFailureHandler {
 
-    private static final HttpStatus httpStatus = HttpStatus.FOUND;
-    
-    private static final String ERROR = "error";
-    private static final String ERROR_DESCRIPTION = "error_description";
-    private static final String REAUTHENTICATION_LOCATION = "reauthentication_location";
+  private static final HttpStatus httpStatus = HttpStatus.FOUND;
 
-    private static final String DEFAULT_ERROR = "server_error";
-    private static final String DEFAULT_ERROR_DESCRIPTION = "Неизвестная ошибка сервера";
+  private static final String ERROR = "error";
+  private static final String ERROR_DESCRIPTION = "error_description";
+  private static final String REAUTHENTICATION_LOCATION = "reauthentication_location";
 
-    private URI location;
-    private String reauthenticationLocation;
+  private static final String DEFAULT_ERROR = "server_error";
+  private static final String DEFAULT_ERROR_DESCRIPTION = "Неизвестная ошибка сервера";
 
-    public CustomServerAuthenticationFailureHandler(String location, String reauthenticationLocation){
-        Assert.notNull(location, "location cannot be null");
-        Assert.notNull(reauthenticationLocation, "reauthenticationLocation cannot be null");
-		this.location = URI.create(location);
-        this.reauthenticationLocation = reauthenticationLocation;
-    }
-    
-    @Override
-    public Mono<Void> onAuthenticationFailure(WebFilterExchange webFilterExchange, AuthenticationException exception) {
+  private URI location;
+  private String reauthenticationLocation;
 
-        //что оправиться с редиректом
-        String queryParamError = null;
-        String queryParamErrorDescription = null;
+  public CustomServerAuthenticationFailureHandler(String location, String reauthenticationLocation) {
+    Assert.notNull(location, "location cannot be null");
+    Assert.notNull(reauthenticationLocation, "reauthenticationLocation cannot be null");
+    this.location = URI.create(location);
+    this.reauthenticationLocation = reauthenticationLocation;
+  }
 
-        // достаем необходимые параметры запроса 
-        MultiValueMap<String, String> queryParamsRequest = webFilterExchange.getExchange().getRequest().getQueryParams();
-        var queryParamsError = queryParamsRequest.getOrDefault(ERROR, List.of(DEFAULT_ERROR));
-        var queryParamsErrorDescription = queryParamsRequest.getOrDefault(ERROR_DESCRIPTION, List.of(DEFAULT_ERROR_DESCRIPTION));
+  @Override
+  public Mono<Void> onAuthenticationFailure(WebFilterExchange webFilterExchange, AuthenticationException exception) {
 
-        queryParamError = queryParamsError.get(0);
+    // что оправиться с редиректом
+    String queryParamError = null;
+    String queryParamErrorDescription = null;
 
-        queryParamErrorDescription = queryParamsErrorDescription.get(0);
+    // достаем необходимые параметры запроса
+    MultiValueMap<String, String> queryParamsRequest = webFilterExchange.getExchange().getRequest().getQueryParams();
+    var queryParamsError = queryParamsRequest.getOrDefault(ERROR, List.of(DEFAULT_ERROR));
+    var queryParamsErrorDescription = queryParamsRequest.getOrDefault(ERROR_DESCRIPTION,
+        List.of(DEFAULT_ERROR_DESCRIPTION));
 
-        // формируем необходимые параметры запроса для редиректа
-        MultiValueMap<String, String> queryParamsForRedirect = new LinkedMultiValueMap<>();
-        queryParamsForRedirect.add(ERROR, queryParamError);
-        queryParamsForRedirect.add(ERROR_DESCRIPTION, queryParamErrorDescription);
-        queryParamsForRedirect.add(REAUTHENTICATION_LOCATION, reauthenticationLocation);
+    queryParamError = queryParamsError.get(0);
 
-        URI redirectToFrontendLocation = UriComponentsBuilder
-            .fromUri(location)
-            .queryParams(queryParamsForRedirect)
-            .build()
-            .toUri();
+    queryParamErrorDescription = queryParamsErrorDescription.get(0);
 
-		return Mono.fromRunnable(() -> {
-            ServerHttpResponse response = webFilterExchange.getExchange().getResponse();
-            response.setStatusCode(httpStatus);
+    // формируем необходимые параметры запроса для редиректа
+    MultiValueMap<String, String> queryParamsForRedirect = new LinkedMultiValueMap<>();
+    queryParamsForRedirect.add(ERROR, queryParamError);
+    queryParamsForRedirect.add(ERROR_DESCRIPTION, queryParamErrorDescription);
+    queryParamsForRedirect.add(REAUTHENTICATION_LOCATION, reauthenticationLocation);
 
-			log.debug("Redirecting to '{}'", redirectToFrontendLocation.toASCIIString());
-			
-            response.getHeaders().setLocation(redirectToFrontendLocation);
+    URI redirectToFrontendLocation = UriComponentsBuilder
+        .fromUri(location)
+        .queryParams(queryParamsForRedirect)
+        .build()
+        .toUri();
 
-		});
-    }
-    
+    return Mono.fromRunnable(() -> {
+      ServerHttpResponse response = webFilterExchange.getExchange().getResponse();
+      response.setStatusCode(httpStatus);
+
+      log.debug("Redirecting to '{}'", redirectToFrontendLocation.toASCIIString());
+
+      response.getHeaders().setLocation(redirectToFrontendLocation);
+
+    });
+  }
+
 }

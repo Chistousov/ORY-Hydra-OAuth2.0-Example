@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
@@ -53,799 +54,782 @@ import reactor.test.StepVerifier;
 @TestMethodOrder(OrderAnnotation.class)
 public class OryHydraServiceTest {
 
-    /*------- const (begin) ------- */
-    
-    // path docker compose
-    private static final File pathToResourceDockerComposeFile = Path.of("").toAbsolutePath().getParent().getParent()
-            .resolve("docker-compose.yaml").toFile();
+  /*------- const (begin) ------- */
 
-    // service name in docker compose
-    private static final String hydraContainerDockerCompose = "ory-hydra-oauth2-example-authorization-server-hydra";
-    // port admin Ory Hydra
-    private static final int hydraAdminPortDockerCompose = 4445;
-    // port public Ory Hydra
-    private static final int hydraPublicPortDockerCompose = 4444;
+  // path docker compose
+  private static final File pathToResourceDockerComposeFile = Path.of("").toAbsolutePath().getParent().getParent()
+      .resolve("docker-compose.yaml").toFile();
 
-    // subject (login) resource owner
-    private static final String login = "some_login";
+  // service name in docker compose
+  private static final String hydraContainerDockerCompose = "ory-hydra-oauth2-example-authorization-server-hydra";
+  // port admin Ory Hydra
+  private static final int hydraAdminPortDockerCompose = 4445;
+  // port public Ory Hydra
+  private static final int hydraPublicPortDockerCompose = 4444;
 
-    // domain Ory Hydra
-    private static final String AUTH_DOMAIN = "authorization-server.com";
+  // subject (login) resource owner
+  private static final String login = "some_login";
 
-    // session after authentication and authorization
-    private static final String OAUTH2_AUTHENTICATION_SESSION = "ory_hydra_session";
+  // domain Ory Hydra
+  private static final String AUTH_DOMAIN = "authorization-server.com";
 
-    private static final String LOGIN_CHALLENGE = "login_challenge";
-    private static final String CONSENT_CHALLENGE = "consent_challenge";
-    private static final String CODE_CHALLENGE = "code_challenge";
-    private static final String LOGOUT_CHALLENGE = "logout_challenge";
+  // session after authentication and authorization
+  private static final String OAUTH2_AUTHENTICATION_SESSION = "ory_hydra_session";
+
+  private static final String LOGIN_CHALLENGE = "login_challenge";
+  private static final String CONSENT_CHALLENGE = "consent_challenge";
+  private static final String CODE_CHALLENGE = "code_challenge";
+  private static final String LOGOUT_CHALLENGE = "logout_challenge";
+
+  // PKCE
+  private static final String CODE_CHALLENGE_METHOD = "code_challenge_method";
+  // protocol PKCE code challenge method SHA256
+  private static final String codeChallengeMethod = "S256";
+
+  // generated application test client
+  private static String scopes = "offine openid read";
+  private static String redirectUri = "http://127.0.0.1:9631/callback";
+
+  /*------- const (end) ------- */
+
+  // start docker compose
+  @Container
+  public static DockerComposeContainer<?> containersDockerCompose = new DockerComposeContainer<>(
+      pathToResourceDockerComposeFile)
+      // .env docker compose
+      .withEnv("USER_DATA_POSTGRESQL_PASSWORD", "superpass")
+      .withEnv("HYDRA_POSTGRESQL_PASSWORD", "superpass2")
+      .withEnv("HYDRA_SECRETS_COOKIE", "some_cookies111111111111111122222")
+      .withEnv("HYDRA_SECRETS_SYSTEM", "some_secrets111111111111111122222")
+      .withEnv("HYDRA_DEPENDS_ON_MIGRATE", "service_started")
+      // public Ory Hydra
+      .withExposedService(hydraContainerDockerCompose, hydraPublicPortDockerCompose,
+          Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(30)))
+      // admin Ory Hydra
+      .withExposedService(hydraContainerDockerCompose, hydraAdminPortDockerCompose,
+          Wait.forHttp("/version").withHeader("X-Forwarded-Proto", "https")
+              .withStartupTimeout(Duration.ofMinutes(30)))
+      // .yaml v2 <-> v3
+      .withOptions("--compatibility")
+      // docker-compose local
+      .withLocalCompose(true);
+
+  // http client for public Ory Hydra
+  private static WebTestClient publicWebTestClient;
+
+  // OAuth 2.0 client Id
+  private static String clientId;
+
+  @DynamicPropertySource
+  public static void setting(DynamicPropertyRegistry registry) throws UnsupportedEncodingException {
+
+    /* postgresql user */
+
+    registry.add("spring.datasource.driverClassName", () -> "org.postgresql.Driver");
+    registry.add("spring.jpa.properties.hibernate.dialect", () -> "org.hibernate.dialect.PostgreSQLDialect");
+    registry.add("spring.datasource.url", () -> "1");
+
+    /* Ory Hydra admin */
+
+    var hydraAdminBaseURI = String.format("http://%s:%d/admin/",
+        containersDockerCompose.getServiceHost(hydraContainerDockerCompose, hydraAdminPortDockerCompose),
+        containersDockerCompose.getServicePort(hydraContainerDockerCompose, hydraAdminPortDockerCompose));
+
+    registry.add("application.ory-hydra.admin.baseURI", () -> hydraAdminBaseURI);
+
+    WebTestClient adminWebTestClient = WebTestClient.bindToServer()
+        .baseUrl(hydraAdminBaseURI)
+        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        // Since Ory Hydra is configured for TLS termination, the header below is
+        // required
+        // We pretend that WebClient is a proxy with TLS termination
+        // Так как Ory Hydra настроена на TLS termination, то необходим заголовок ниже
+        // Делаем вид что, WebClient прокси с TLS termination
+        .defaultHeader("X-Forwarded-Proto", "https")
+        .build();
+
+    /* Ory Hydra Public */
+
+    var hydraPublicBaseURI = String.format("http://%s:%d/",
+        containersDockerCompose.getServiceHost(hydraContainerDockerCompose, hydraPublicPortDockerCompose),
+        containersDockerCompose.getServicePort(hydraContainerDockerCompose, hydraPublicPortDockerCompose));
+
+    registry.add("application.ory-hydra.public.baseURI", () -> hydraPublicBaseURI);
+
+    publicWebTestClient = WebTestClient.bindToServer()
+        .baseUrl(hydraPublicBaseURI)
+        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+        // Since Ory Hydra is configured for TLS termination, the header below is
+        // required
+        // We pretend that WebClient is a proxy with TLS termination
+        // Так как Ory Hydra настроена на TLS termination, то необходим заголовок ниже
+        // Делаем вид что, WebClient прокси с TLS termination
+        .defaultHeader("X-Forwarded-Proto", "https")
+        .build();
+
+    // create a test client application
+    CreateClientModel createClientModel = new CreateClientModel();
+    createClientModel.setRedirect_uris(List.of(redirectUri));
+    createClientModel.setGrant_types(List.of("authorization_code"));
+    createClientModel.setResponse_types(List.of("code"));
+    createClientModel.setScope(scopes);
+
+    adminWebTestClient
+        .post()
+        .uri("/clients")
+        .body(Mono.just(createClientModel), CreateClientModel.class)
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .expectBody(CreateClientModel.class)
+        .value(val -> {
+          clientId = val.getClient_id();
+        });
+
+  }
+
+  @Autowired
+  private OryHydraService oryHydraService;
+
+  /* ------- temporary variables (begin) --------- */
+
+  // state для 4.1.1 Authorization Request для grant type Authorization Code Grant
+  private String state;
+  private String nonce;
+
+  private MultiValueMap<String, String> cookiesBeforeOauth2LoginRedirect;
+  private MultiValueMap<String, String> cookiesBeforeOauth2ConsentRedirect;
+  private String oauth2AuthenticationSession;
+
+  private String loginLocation;
+  private String loginChallenge;
+  private String consentChallenge;
+
+  private String redirectConsentLocation;
+  private String consentLocation;
+  private String redirectForContentVerifier;
+
+  private String logoutLocation;
+  private String logoutChallenge;
+  private String redirectLogoutLocation;
+
+  private String codeVerifier;
+  private String codeChallenge;
+
+  /* ------- temporary variables (end) --------- */
+
+  @BeforeEach
+  public void initEach() throws UnsupportedEncodingException, NoSuchAlgorithmException {
 
     // PKCE
-    private static final String CODE_CHALLENGE_METHOD = "code_challenge_method";
-    // protocol PKCE code challenge method SHA256
-    private static final String codeChallengeMethod = "S256";
-
-    // generated application test client
-    private static String scopes = "offine openid";;
-    private static String redirectUri = "http://127.0.0.1:9631/callback";
-
-    /*------- const (end) ------- */
-
-    // start docker compose
-    @Container
-    public static DockerComposeContainer<?> containersDockerCompose = new DockerComposeContainer<>(
-            pathToResourceDockerComposeFile)
-            // .env docker compose
-            .withEnv("USER_DATA_POSTGRESQL_PASSWORD", "superpass")
-            .withEnv("HYDRA_POSTGRESQL_PASSWORD", "superpass2")
-            .withEnv("HYDRA_SECRETS_COOKIE", "some_cookies111111111111111122222")
-            .withEnv("HYDRA_SECRETS_SYSTEM", "some_secrets111111111111111122222")
-            .withEnv("HYDRA_DEPENDS_ON_MIGRATE", "service_started")
-            // public Ory Hydra
-            .withExposedService(hydraContainerDockerCompose, hydraPublicPortDockerCompose,
-                    Wait.forListeningPort().withStartupTimeout(Duration.ofMinutes(30)))
-            // admin Ory Hydra
-            .withExposedService(hydraContainerDockerCompose, hydraAdminPortDockerCompose,
-                    Wait.forHttp("/version").withHeader("X-Forwarded-Proto", "https")
-                            .withStartupTimeout(Duration.ofMinutes(30)))
-            // .yaml v2 <-> v3
-            .withOptions("--compatibility")
-            // docker-compose local
-            .withLocalCompose(true);
-
-    // http client for public Ory Hydra
-    private static WebTestClient publicWebTestClient;
-
-    // OAuth 2.0 client Id
-    private static String clientId;
-
-    @DynamicPropertySource
-    public static void setting(DynamicPropertyRegistry registry) throws UnsupportedEncodingException {
-
-        /* postgresql user */
-
-        registry.add("spring.datasource.driverClassName", () -> "org.postgresql.Driver");
-        registry.add("spring.jpa.properties.hibernate.dialect", () -> "org.hibernate.dialect.PostgreSQLDialect");
-        registry.add("spring.datasource.url", () -> "1");
-
-        /* Ory Hydra admin */
-
-        var hydraAdminBaseURI = String.format("http://%s:%d/admin/",
-                containersDockerCompose.getServiceHost(hydraContainerDockerCompose, hydraAdminPortDockerCompose),
-                containersDockerCompose.getServicePort(hydraContainerDockerCompose, hydraAdminPortDockerCompose));
-
-        registry.add("application.ory-hydra.admin.baseURI", () -> hydraAdminBaseURI);
-
-        WebTestClient adminWebTestClient = WebTestClient.bindToServer()
-                .baseUrl(hydraAdminBaseURI)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                // Since Ory Hydra is configured for TLS termination, the header below is
-                // required
-                // We pretend that WebClient is a proxy with TLS termination
-                // Так как Ory Hydra настроена на TLS termination, то необходим заголовок ниже
-                // Делаем вид что, WebClient прокси с TLS termination
-                .defaultHeader("X-Forwarded-Proto", "https")
-                .build();
-
-        /* Ory Hydra Public */
-
-        var hydraPublicBaseURI = String.format("http://%s:%d/",
-                containersDockerCompose.getServiceHost(hydraContainerDockerCompose, hydraPublicPortDockerCompose),
-                containersDockerCompose.getServicePort(hydraContainerDockerCompose, hydraPublicPortDockerCompose));
-
-        registry.add("application.ory-hydra.public.baseURI", () -> hydraPublicBaseURI);
-
-        publicWebTestClient = WebTestClient.bindToServer()
-                .baseUrl(hydraPublicBaseURI)
-                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                // Since Ory Hydra is configured for TLS termination, the header below is
-                // required
-                // We pretend that WebClient is a proxy with TLS termination
-                // Так как Ory Hydra настроена на TLS termination, то необходим заголовок ниже
-                // Делаем вид что, WebClient прокси с TLS termination
-                .defaultHeader("X-Forwarded-Proto", "https")
-                .build();
-
-        // create a test client application
-        CreateClientModel createClientModel = new CreateClientModel();
-        createClientModel.setRedirect_uris(List.of(redirectUri));
-        createClientModel.setGrant_types(List.of("authorization_code"));
-        createClientModel.setResponse_types(List.of("code"));
-        createClientModel.setScope(scopes);
-
-        adminWebTestClient
-                .post()
-                .uri("/clients")
-                .body(Mono.just(createClientModel), CreateClientModel.class)
-                .exchange()
-                .expectStatus()
-                .isCreated()
-                .expectBody(CreateClientModel.class)
-                .value(val -> {
-                    clientId = val.getClient_id();
-                });
-
-    }
-
-    @Autowired
-    private OryHydraService oryHydraService;
-
-    /* ------- temporary variables (begin) --------- */
-    
-    // state для 4.1.1 Authorization Request для grant type Authorization Code Grant
-    private String state;
-    private String nonce;
-
-    private MultiValueMap<String, String> cookiesBeforeOauth2LoginRedirect;
-    private MultiValueMap<String, String> cookiesBeforeOauth2ConsentRedirect;
-    private String oauth2AuthenticationSession;
-
-    private String loginLocation;
-    private String loginChallenge;
-    private String consentChallenge;
-
-    private String redirectConsentLocation;
-    private String consentLocation;
-    private String redirectForContentVerifier;
-
-    private String logoutLocation;
-    private String logoutChallenge;
-    private String redirectLogoutLocation;
-
-    private String codeVerifier;
-    private String codeChallenge;
-
-    /* ------- temporary variables (end) --------- */
-
-    @BeforeEach
-    public void initEach() throws UnsupportedEncodingException, NoSuchAlgorithmException {
-
-        // PKCE
-        codeVerifier = SupportModule.generateCodeVerifier();
-        codeChallenge = SupportModule.generateCodeChallange(codeVerifier);
-
-        state = SupportModule.generateRandomStr();
-        nonce = SupportModule.generateRandomStr();
-
-        cookiesBeforeOauth2LoginRedirect = null;
-        cookiesBeforeOauth2ConsentRedirect = null;
-        oauth2AuthenticationSession = null;
-
-        loginLocation = null;
-        loginChallenge = null;
-        consentChallenge = null;
-
-        redirectConsentLocation = null;
-        consentLocation = null;
-        redirectForContentVerifier = null;
-
-        logoutLocation = null;
-        logoutChallenge = null;
-        redirectLogoutLocation = null;
-
-    }
-
-    /**
-     * <p>
-     * Init Ory Hydra Login Flow. Get loginChallenge.
-     * </p>
-     * 
-     * @author Nikita Chistousov (chistousov.nik@yandex.ru)
-     * @since 11
-     */
-    private void oryHydraInitLoginFlow() throws URISyntaxException {
-
-        publicWebTestClient
-            .get()
-            .uri(uriBuilder -> 
-                uriBuilder
-                    .path("oauth2/auth")
-                    .queryParam("client_id", clientId)
-                    .queryParam("response_type", "code")
-                    .queryParam("state", state)
-                    .queryParam("nonce", nonce)
-                    .queryParam("redirect_uri", redirectUri)
-                    // PKCE
-                    .queryParam(CODE_CHALLENGE, codeChallenge)
-                    .queryParam(CODE_CHALLENGE_METHOD, codeChallengeMethod)
-                    .build()
-            )
-            .cookie(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession == null
-                    || oauth2AuthenticationSession.isBlank()
-                    || oauth2AuthenticationSession.isEmpty() ? ""
-                        : oauth2AuthenticationSession
-            )
-            .exchange()
-            .expectStatus()
-            .isFound()
-            .expectHeader()
-            .exists("Location")
-            .expectHeader()
-            .valueMatches("Location",String.format("^https:\\/\\/%s\\/api\\/login\\?login_challenge=.+$",AUTH_DOMAIN))
-            .expectHeader()
-            .value("Location", location -> loginLocation = location)
-            .expectHeader()
-            .exists("Set-Cookie")
-            .expectHeader()
-            .values("Set-Cookie", cookies -> {
-                cookiesBeforeOauth2LoginRedirect = new LinkedMultiValueMap<>(cookies.size());
-
-                for (int i = 0; i < cookies.size(); i++) {
-                    String nameAndValueCookieStr = cookies.get(i).split(";")[0];
-
-                    String[] nameAndValueCookieArray = nameAndValueCookieStr.split("=", 2);
-
-                    cookiesBeforeOauth2LoginRedirect.add(nameAndValueCookieArray[0], nameAndValueCookieArray[1]);
-                
-                }
-
-            });
-
-        URI loginLocationURI = new URI(loginLocation);
-        String queryParamsStr = loginLocationURI.getQuery();
-
-        // check that the request parameters are present
-        assertThat(queryParamsStr).isNotEmpty().isNotBlank().contains("=");
-
-        // parse request parameters into a convenient structure
-        var queryParams = Arrays
-                .stream(queryParamsStr.split("&"))
-                .map(SupportModule::splitQueryParameter)
-                .collect(
-                        Collectors.groupingBy(
-                                SimpleImmutableEntry::getKey,
-                                LinkedHashMap::new,
-                                Collectors.mapping(Map.Entry::getValue,
-                                        Collectors.toList())));
-
-        // check that there is a login_challenge in the request parameters
-        assertThat(queryParams).isNotEmpty().containsOnlyKeys(LOGIN_CHALLENGE);
-
-        // remember login_challenge
-        loginChallenge = queryParams.get(LOGIN_CHALLENGE).get(0);
-    }
-
-    /**
-     * <p>
-     * Init Ory Hydra Consent Flow. Get loginChallenge.
-     * </p>
-     * 
-     * @param queryParamsStrRedirectConsent - query params for init Consent Flow
-     * 
-     * @author Nikita Chistousov (chistousov.nik@yandex.ru)
-     * @since 11
-     */
-    private void oryHydraInitConsentFlow(String queryParamsStrRedirectConsent) throws URISyntaxException {
-
-        publicWebTestClient
-            .get()
-            .uri(
-                uriBuilder -> uriBuilder
-                                .path("/oauth2/auth")
-                                .query(queryParamsStrRedirectConsent)
-                                .build()
-            )
-            .cookies(cookies -> cookies.addAll(cookiesBeforeOauth2LoginRedirect))
-            .exchange()
-            .expectStatus()
-            .isFound()
-            .expectHeader()
-            .exists("Location")
-            .expectHeader()
-            .valueMatches("Location", String.format("^https:\\/\\/%s\\/api\\/consent\\?consent_challenge=.+$", AUTH_DOMAIN))
-            .expectHeader()
-            .value("Location", location -> consentLocation = location)
-            .expectCookie()
-            // remember ora hydra session for re-authentication
-            // (authentication without password re-entry)
-            // запоминаем сессию ora hydra для переаутентификации 
-            // (аутентификации без повторного ввода пароля)
-            .value(OAUTH2_AUTHENTICATION_SESSION, val -> oauth2AuthenticationSession = val)
-            .expectHeader()
-            .exists("Set-Cookie")
-            .expectHeader()
-            .values("Set-Cookie", cookies -> {
-                cookiesBeforeOauth2ConsentRedirect = new LinkedMultiValueMap<>(cookies.size());
-
-                for (int i = 0; i < cookies.size(); i++) {
-                    String nameAndValueCookieStr = cookies.get(i).split(";")[0];
-
-                    String[] nameAndValueCookieArray = nameAndValueCookieStr.split("=", 2);
-
-                    if (cookiesBeforeOauth2ConsentRedirect.containsKey(nameAndValueCookieArray[0])) {
-                        cookiesBeforeOauth2ConsentRedirect.remove(nameAndValueCookieArray[0]);
-                        cookiesBeforeOauth2ConsentRedirect.add(nameAndValueCookieArray[0], nameAndValueCookieArray[1]);
-                    } else {
-                        cookiesBeforeOauth2ConsentRedirect.add(nameAndValueCookieArray[0], nameAndValueCookieArray[1]);
-                    }
-
-                }
-
-            });
-
-        URI consentLocationURI = new URI(consentLocation);
-        var queryParamsStrConsent = consentLocationURI.getQuery();
-
-        // check that the request parameters are present
-        assertThat(queryParamsStrConsent).isNotEmpty().isNotBlank().contains("=");
-
-        // parse request parameters into a convenient structure
-        var queryParamsConsent = Arrays
-                .stream(queryParamsStrConsent.split("&"))
-                .map(SupportModule::splitQueryParameter)
-                .collect(
-                        Collectors.groupingBy(
-                                SimpleImmutableEntry::getKey,
-                                LinkedHashMap::new,
-                                Collectors.mapping(Map.Entry::getValue,
-                                        Collectors.toList())));
-
-        // check that there is consent_challenge in the request parameters
-        assertThat(queryParamsConsent).isNotEmpty().containsOnlyKeys(CONSENT_CHALLENGE);
-
-        // remember consent_challenge
-        consentChallenge = queryParamsConsent.get(CONSENT_CHALLENGE).get(0);
-    }
-
-    /**
-     * <p>
-     * Ory Hydra full Cycle Auth
-     * </p>
-     * 
-     * @author Nikita Chistousov (chistousov.nik@yandex.ru)
-     * @since 11
-     */
-    private void fullCycleAuth() throws UnsupportedEncodingException, NoSuchAlgorithmException, URISyntaxException {
-
-        // 4.1.1 Authorization Request
-
-        // authentication request
-        oryHydraInitLoginFlow();
-
-        /*  BEGIN ory hydra login flow */
-
-        // check info loginChallenge
-        StepVerifier
-            .create(this.oryHydraService.loginRequestInfo(loginChallenge))
-            .expectNextMatches(body -> body.getClient().getClientId().equals(clientId))
-            .verifyComplete();
-
-        // authorization with redirect
-        var acceptLoginRequestModel = Mono.just(
-            AcceptLoginRequestModelBuilder.builder()
-                .setSubject(login)
-                .setRemember(true)
-                .setRememberFor(60L * 60L * 24L)
-                .setContextModel("")
-                .build()
-        );
-        StepVerifier
-            .create(this.oryHydraService.acceptLoginRequest(loginChallenge, acceptLoginRequestModel))
-            .expectNextMatches(
-                responseWithRedirectModel -> {
-
-                redirectConsentLocation = responseWithRedirectModel.getRedirectTo();
-
-                return redirectConsentLocation
-                        .matches(
-                            String.format(
-                                "^https:\\/\\/%s\\/oauth2\\/auth\\?client_id=%s&code_challenge=%s&code_challenge_method=%s&login_verifier=.+&response_type=code&state=%s$",
-                                AUTH_DOMAIN, clientId, codeChallenge, codeChallengeMethod, state
-                            )
-                        );
+    codeVerifier = SupportModule.generateCodeVerifier();
+    codeChallenge = SupportModule.generateCodeChallange(codeVerifier);
+
+    state = SupportModule.generateRandomStr();
+    nonce = SupportModule.generateRandomStr();
+
+    cookiesBeforeOauth2LoginRedirect = null;
+    cookiesBeforeOauth2ConsentRedirect = null;
+    oauth2AuthenticationSession = null;
+
+    loginLocation = null;
+    loginChallenge = null;
+    consentChallenge = null;
+
+    redirectConsentLocation = null;
+    consentLocation = null;
+    redirectForContentVerifier = null;
+
+    logoutLocation = null;
+    logoutChallenge = null;
+    redirectLogoutLocation = null;
+
+  }
+
+  /**
+   * <p>
+   * Init Ory Hydra Login Flow. Get loginChallenge.
+   * </p>
+   *
+   * @author Nikita Chistousov (chistousov.nik@yandex.ru)
+   * @since 11
+   */
+  private void oryHydraInitLoginFlow() throws URISyntaxException, UnsupportedEncodingException {
+
+    String scopesURI = URLEncoder.encode(String.join(" ", scopes), "UTF-8");
+
+    publicWebTestClient
+        .get()
+        .uri(uriBuilder -> uriBuilder
+            .path("oauth2/auth")
+            .queryParam("client_id", clientId)
+            .queryParam("response_type", "code")
+            .queryParam("state", state)
+            .queryParam("nonce", nonce)
+            .queryParam("redirect_uri", redirectUri)
+            .queryParam("scope", scopesURI)
+            // PKCE
+            .queryParam(CODE_CHALLENGE, codeChallenge)
+            .queryParam(CODE_CHALLENGE_METHOD, codeChallengeMethod)
+            .build())
+        .cookie(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession == null
+            || oauth2AuthenticationSession.isBlank()
+            || oauth2AuthenticationSession.isEmpty() ? ""
+                : oauth2AuthenticationSession)
+        .exchange()
+        .expectStatus()
+        .isFound()
+        .expectHeader()
+        .exists("Location")
+        .expectHeader()
+        .valueMatches("Location", String.format("^https:\\/\\/%s\\/api\\/login\\?login_challenge=.+$", AUTH_DOMAIN))
+        .expectHeader()
+        .value("Location", location -> loginLocation = location)
+        .expectHeader()
+        .exists("Set-Cookie")
+        .expectHeader()
+        .values("Set-Cookie", cookies -> {
+          cookiesBeforeOauth2LoginRedirect = new LinkedMultiValueMap<>(cookies.size());
+
+          for (int i = 0; i < cookies.size(); i++) {
+            String nameAndValueCookieStr = cookies.get(i).split(";")[0];
+
+            String[] nameAndValueCookieArray = nameAndValueCookieStr.split("=", 2);
+
+            cookiesBeforeOauth2LoginRedirect.add(nameAndValueCookieArray[0], nameAndValueCookieArray[1]);
+
+          }
+
+        });
+
+    URI loginLocationURI = new URI(loginLocation);
+    String queryParamsStr = loginLocationURI.getQuery();
+
+    // check that the request parameters are present
+    assertThat(queryParamsStr).isNotEmpty().isNotBlank().contains("=");
+
+    // parse request parameters into a convenient structure
+    var queryParams = Arrays
+        .stream(queryParamsStr.split("&"))
+        .map(SupportModule::splitQueryParameter)
+        .collect(
+            Collectors.groupingBy(
+                SimpleImmutableEntry::getKey,
+                LinkedHashMap::new,
+                Collectors.mapping(Map.Entry::getValue,
+                    Collectors.toList())));
+
+    // check that there is a login_challenge in the request parameters
+    assertThat(queryParams).isNotEmpty().containsOnlyKeys(LOGIN_CHALLENGE);
+
+    // remember login_challenge
+    loginChallenge = queryParams.get(LOGIN_CHALLENGE).get(0);
+  }
+
+  /**
+   * <p>
+   * Init Ory Hydra Consent Flow. Get loginChallenge.
+   * </p>
+   *
+   * @param queryParamsStrRedirectConsent - query params for init Consent Flow
+   *
+   * @author Nikita Chistousov (chistousov.nik@yandex.ru)
+   * @since 11
+   */
+  private void oryHydraInitConsentFlow(String queryParamsStrRedirectConsent) throws URISyntaxException {
+
+    publicWebTestClient
+        .get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/oauth2/auth")
+                .query(queryParamsStrRedirectConsent)
+                .build())
+        .cookies(cookies -> cookies.addAll(cookiesBeforeOauth2LoginRedirect))
+        .exchange()
+        .expectStatus()
+        .isFound()
+        .expectHeader()
+        .exists("Location")
+        .expectHeader()
+        .valueMatches("Location", String.format("^https:\\/\\/%s\\/api\\/consent\\?consent_challenge=.+$", AUTH_DOMAIN))
+        .expectHeader()
+        .value("Location", location -> consentLocation = location)
+        .expectCookie()
+        // remember ora hydra session for re-authentication
+        // (authentication without password re-entry)
+        // запоминаем сессию ora hydra для переаутентификации
+        // (аутентификации без повторного ввода пароля)
+        .value(OAUTH2_AUTHENTICATION_SESSION, val -> oauth2AuthenticationSession = val)
+        .expectHeader()
+        .exists("Set-Cookie")
+        .expectHeader()
+        .values("Set-Cookie", cookies -> {
+          cookiesBeforeOauth2ConsentRedirect = new LinkedMultiValueMap<>(cookies.size());
+
+          for (int i = 0; i < cookies.size(); i++) {
+            String nameAndValueCookieStr = cookies.get(i).split(";")[0];
+
+            String[] nameAndValueCookieArray = nameAndValueCookieStr.split("=", 2);
+
+            if (cookiesBeforeOauth2ConsentRedirect.containsKey(nameAndValueCookieArray[0])) {
+              cookiesBeforeOauth2ConsentRedirect.remove(nameAndValueCookieArray[0]);
+              cookiesBeforeOauth2ConsentRedirect.add(nameAndValueCookieArray[0], nameAndValueCookieArray[1]);
+            } else {
+              cookiesBeforeOauth2ConsentRedirect.add(nameAndValueCookieArray[0], nameAndValueCookieArray[1]);
+            }
+
+          }
+
+        });
+
+    URI consentLocationURI = new URI(consentLocation);
+    var queryParamsStrConsent = consentLocationURI.getQuery();
+
+    // check that the request parameters are present
+    assertThat(queryParamsStrConsent).isNotEmpty().isNotBlank().contains("=");
+
+    // parse request parameters into a convenient structure
+    var queryParamsConsent = Arrays
+        .stream(queryParamsStrConsent.split("&"))
+        .map(SupportModule::splitQueryParameter)
+        .collect(
+            Collectors.groupingBy(
+                SimpleImmutableEntry::getKey,
+                LinkedHashMap::new,
+                Collectors.mapping(Map.Entry::getValue,
+                    Collectors.toList())));
+
+    // check that there is consent_challenge in the request parameters
+    assertThat(queryParamsConsent).isNotEmpty().containsOnlyKeys(CONSENT_CHALLENGE);
+
+    // remember consent_challenge
+    consentChallenge = queryParamsConsent.get(CONSENT_CHALLENGE).get(0);
+  }
+
+  /**
+   * <p>
+   * Ory Hydra full Cycle Auth
+   * </p>
+   *
+   * @author Nikita Chistousov (chistousov.nik@yandex.ru)
+   * @since 11
+   */
+  private void fullCycleAuth() throws UnsupportedEncodingException, NoSuchAlgorithmException, URISyntaxException {
+
+    // 4.1.1 Authorization Request
+
+    // authentication request
+    oryHydraInitLoginFlow();
+
+    /* BEGIN ory hydra login flow */
+
+    // check info loginChallenge
+    StepVerifier
+        .create(this.oryHydraService.loginRequestInfo(loginChallenge))
+        .expectNextMatches(body -> body.getClient().getClientId().equals(clientId))
+        .verifyComplete();
+
+    // authorization with redirect
+    var acceptLoginRequestModel = Mono.just(
+        AcceptLoginRequestModelBuilder.builder()
+            .setSubject(login)
+            .setRemember(true)
+            .setRememberFor(60L * 60L * 24L)
+            .setContextModel("")
+            .build());
+    StepVerifier
+        .create(this.oryHydraService.acceptLoginRequest(loginChallenge, acceptLoginRequestModel))
+        .expectNextMatches(
+            responseWithRedirectModel -> {
+
+              redirectConsentLocation = responseWithRedirectModel.getRedirectTo();
+
+              return redirectConsentLocation
+                  .matches(
+                      String.format(
+                          "^https:\\/\\/%s\\/oauth2\\/auth\\?client_id=%s&code_challenge=%s&code_challenge_method=%s&login_verifier=.+&response_type=code&scope=.+&state=%s$",
+                          AUTH_DOMAIN, clientId, codeChallenge, codeChallengeMethod, state));
             })
-            .verifyComplete();
+        .verifyComplete();
 
-        /*  END ory hydra login flow */
+    /* END ory hydra login flow */
 
-        URI redirectConsentLocationURI = new URI(redirectConsentLocation);
-        var queryParamsStrRedirectConsent = redirectConsentLocationURI.getQuery();
+    URI redirectConsentLocationURI = new URI(redirectConsentLocation);
+    var queryParamsStrRedirectConsent = redirectConsentLocationURI.getQuery();
 
-        // remember the login flow state and switch to ory hydra consent flow
-        oryHydraInitConsentFlow(queryParamsStrRedirectConsent);
-        
-        /*  BEGIN ory hydra consent flow */
+    // remember the login flow state and switch to ory hydra consent flow
+    oryHydraInitConsentFlow(queryParamsStrRedirectConsent);
 
-        StepVerifier
-            .create(this.oryHydraService.consentRequestInfo(consentChallenge))
-            .expectNextMatches(body -> body.getClient().getClientId().equals(clientId))
-            .verifyComplete();
+    /* BEGIN ory hydra consent flow */
 
-        TestAccessTokenExtension accessTokenExtension = new TestAccessTokenExtension();
-        accessTokenExtension.setId(1L);
-        accessTokenExtension.setName("some_name");
+    StepVerifier
+        .create(this.oryHydraService.consentRequestInfo(consentChallenge))
+        .expectNextMatches(body -> body.getClient().getClientId().equals(clientId))
+        .verifyComplete();
 
-        TestIdTokenExtension idTokenExtension = new TestIdTokenExtension();
-        idTokenExtension.setHash("some_hash");
+    TestAccessTokenExtension accessTokenExtension = new TestAccessTokenExtension();
+    accessTokenExtension.setId(1L);
+    accessTokenExtension.setName("some_name");
 
-        var acceptConsentRequestModelMono = Mono.just(
-            AcceptConsentRequestModelBuilder.builder()
-                .setGrantScope(Arrays.asList(scopes.split(" ")))
-                .setRemember(true)
-                .setRememberFor(36L * 60L* 60L)
-                .setSession(
-                    SessionForTokenModelBuilder
-                        .builder()
-                        .setAccessTokenExtension(accessTokenExtension)
-                        .setIdTokenExtension(idTokenExtension)
-                        .build()
-                )
-                .build()
-        );
+    TestIdTokenExtension idTokenExtension = new TestIdTokenExtension();
+    idTokenExtension.setHash("some_hash");
 
-        StepVerifier
-            .create(this.oryHydraService.acceptConsentRequest(consentChallenge, acceptConsentRequestModelMono))
-            .expectNextMatches(
-                responseWithRedirectModel -> {
+    var acceptConsentRequestModelMono = Mono.just(
+        AcceptConsentRequestModelBuilder.builder()
+            .setGrantScope(Arrays.asList(scopes.split(" ")))
+            .setRemember(true)
+            .setRememberFor(36L * 60L * 60L)
+            .setSession(
+                SessionForTokenModelBuilder
+                    .builder()
+                    .setAccessTokenExtension(accessTokenExtension)
+                    .setIdTokenExtension(idTokenExtension)
+                    .build())
+            .build());
 
-                redirectForContentVerifier = responseWithRedirectModel.getRedirectTo();
+    StepVerifier
+        .create(this.oryHydraService.acceptConsentRequest(consentChallenge, acceptConsentRequestModelMono))
+        .expectNextMatches(
+            responseWithRedirectModel -> {
 
-                return redirectForContentVerifier
-                        .matches(
-                            String.format(
-                                "^https:\\/\\/%s\\/oauth2\\/auth\\?client_id=%s&code_challenge=%s&code_challenge_method=%s&consent_verifier=.+&response_type=code&state=%s$",
-                                AUTH_DOMAIN, clientId, codeChallenge, codeChallengeMethod, state)
-                        );
+              redirectForContentVerifier = responseWithRedirectModel.getRedirectTo();
+
+              return redirectForContentVerifier
+                  .matches(
+                      String.format(
+                          "^https:\\/\\/%s\\/oauth2\\/auth\\?client_id=%s&code_challenge=%s&code_challenge_method=%s&consent_verifier=.+&response_type=code&scope=.+&state=%s$",
+                          AUTH_DOMAIN, clientId, codeChallenge, codeChallengeMethod, state));
             })
-            .verifyComplete();
+        .verifyComplete();
 
-        URI redirectForContentVerifierURI = new URI(redirectForContentVerifier);
-        var queryParamsForContentVerifier = redirectForContentVerifierURI.getQuery();
+    URI redirectForContentVerifierURI = new URI(redirectForContentVerifier);
+    var queryParamsForContentVerifier = redirectForContentVerifierURI.getQuery();
 
-        /*  END ory hydra consent flow */
+    /* END ory hydra consent flow */
 
-        // THE END
-        publicWebTestClient
-            .get()
-            .uri(
-                uriBuilder -> uriBuilder
-                                .path("/oauth2/auth")
-                                .query(queryParamsForContentVerifier)
-                                .build()
-            )
-            .cookies(cookies -> {
-                cookies.addAll(cookiesBeforeOauth2ConsentRedirect);
-                cookiesBeforeOauth2LoginRedirect.entrySet().removeIf(k -> cookiesBeforeOauth2ConsentRedirect.containsKey(k.getKey()));
-                cookies.addAll(cookiesBeforeOauth2LoginRedirect);
-                cookies.add(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession);
+    // THE END
+    publicWebTestClient
+        .get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/oauth2/auth")
+                .query(queryParamsForContentVerifier)
+                .build())
+        .cookies(cookies -> {
+          cookies.addAll(cookiesBeforeOauth2ConsentRedirect);
+          cookiesBeforeOauth2LoginRedirect.entrySet()
+              .removeIf(k -> cookiesBeforeOauth2ConsentRedirect.containsKey(k.getKey()));
+          cookies.addAll(cookiesBeforeOauth2LoginRedirect);
+          cookies.add(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession);
+        })
+        .exchange()
+        .expectStatus()
+        .isSeeOther()
+        .expectHeader()
+        .exists("Location")
+        .expectHeader()
+        .valueMatches("Location", String.format("^%s\\?code=.+&scope=.+&state=%s$", redirectUri, state));
+  }
+
+  @Test
+  @Order(1)
+  @DisplayName("Full cycle of user authentication and authorization")
+  void fullCycleAuthentication() throws UnsupportedEncodingException, NoSuchAlgorithmException, URISyntaxException {
+    fullCycleAuth();
+  }
+
+  @Test
+  @Order(2)
+  @DisplayName("Reject login flow")
+  void rejectLoginRequest() throws URISyntaxException, UnsupportedEncodingException {
+
+    // authentication request
+    oryHydraInitLoginFlow();
+
+    // error for reject
+    var errorModel = ErrorModelBuilder
+        .builder()
+        .setError("some_error")
+        .setErrorDescription("some_description")
+        .setStatusCode(504L)
+        .setErrorDebug("some_debug")
+        .setErrorHint("hint")
+        .build();
+    var errorModelMono = Mono.just(errorModel);
+
+    StepVerifier
+        .create(this.oryHydraService.rejectLoginRequest(loginChallenge, errorModelMono))
+        .expectNextMatches(
+            responseWithRedirectModel -> {
+
+              redirectConsentLocation = responseWithRedirectModel.getRedirectTo();
+
+              return redirectConsentLocation
+                  .matches(
+                      String.format(
+                          "^https:\\/\\/%s\\/oauth2\\/auth\\?client_id=%s&code_challenge=%s&code_challenge_method=%s&login_verifier=.+&response_type=code&scope=.+&state=%s$",
+                          AUTH_DOMAIN, clientId, codeChallenge, codeChallengeMethod, state));
             })
-            .exchange()
-            .expectStatus()
-            .isSeeOther()
-            .expectHeader()
-            .exists("Location")
-            .expectHeader()
-            .valueMatches("Location", String.format("^%s\\?code=.+&scope=.+&state=%s$", redirectUri, state));
-    }
+        .verifyComplete();
 
-    @Test
-    @Order(1)
-    @DisplayName("Full cycle of user authentication and authorization")
-    void fullCycleAuthentication() throws UnsupportedEncodingException, NoSuchAlgorithmException, URISyntaxException {
-        fullCycleAuth();
-    }
+    URI redirectConsentLocationURI = new URI(redirectConsentLocation);
+    var queryParamsStrRedirectConsent = redirectConsentLocationURI.getQuery();
 
-    @Test
-    @Order(2)
-    @DisplayName("Reject login flow")
-    void rejectLoginRequest() throws URISyntaxException {
+    publicWebTestClient
+        .get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/oauth2/auth")
+                .query(queryParamsStrRedirectConsent)
+                .build())
+        .cookies(cookies -> cookies.addAll(cookiesBeforeOauth2LoginRedirect))
+        .exchange()
+        .expectStatus()
+        .isSeeOther()
+        .expectHeader()
+        .exists("Location")
+        .expectHeader()
+        .valueMatches("Location",
+            String.format("^%s\\?error=%s&error_description=%s\\+hint&state=%s$",
+                redirectUri, errorModel.getError(), errorModel.getErrorDescription(), state));
+  }
 
-        // authentication request
-        oryHydraInitLoginFlow();
+  @Test
+  @Order(3)
+  @DisplayName("Reject consent flow")
+  void rejectConsentRequest() throws URISyntaxException, UnsupportedEncodingException {
 
-        // error for reject
-        var errorModel = ErrorModelBuilder
-            .builder()
-            .setError("some_error")
-            .setErrorDescription("some_description")
-            .setStatusCode(504L)
-            .setErrorDebug("some_debug")
-            .setErrorHint("hint")
-            .build();
-        var errorModelMono = Mono.just(errorModel);
+    oryHydraInitLoginFlow();
 
-        StepVerifier
-            .create(this.oryHydraService.rejectLoginRequest(loginChallenge, errorModelMono))
-            .expectNextMatches(
-                responseWithRedirectModel -> {
+    /* BEGIN ory hydra login flow */
 
-                redirectConsentLocation = responseWithRedirectModel.getRedirectTo();
+    var acceptLoginRequestModel = Mono.just(
+        AcceptLoginRequestModelBuilder.builder()
+            .setSubject(login)
+            .setRemember(true)
+            .setRememberFor(60L * 60L * 24L)
+            .setContextModel("")
+            .build());
 
-                return redirectConsentLocation
-                            .matches(
-                                String.format(
-                                    "^https:\\/\\/%s\\/oauth2\\/auth\\?client_id=%s&code_challenge=%s&code_challenge_method=%s&login_verifier=.+&response_type=code&state=%s$",
-                                            AUTH_DOMAIN, clientId, codeChallenge, codeChallengeMethod, state)
-                                );
+    StepVerifier
+        .create(this.oryHydraService.acceptLoginRequest(loginChallenge, acceptLoginRequestModel))
+        .expectNextMatches(
+            responseWithRedirectModel -> {
+
+              redirectConsentLocation = responseWithRedirectModel.getRedirectTo();
+
+              return redirectConsentLocation
+                  .matches(
+                      String.format(
+                          "^https:\\/\\/%s\\/oauth2\\/auth\\?client_id=%s&code_challenge=%s&code_challenge_method=%s&login_verifier=.+&response_type=code&scope=.+&state=%s$",
+                          AUTH_DOMAIN, clientId, codeChallenge, codeChallengeMethod, state));
             })
-            .verifyComplete();
+        .verifyComplete();
 
-        URI redirectConsentLocationURI = new URI(redirectConsentLocation);
-        var queryParamsStrRedirectConsent = redirectConsentLocationURI.getQuery();
+    /* END ory hydra login flow */
 
-        publicWebTestClient
-            .get()
-            .uri(
-                uriBuilder -> uriBuilder
-                            .path("/oauth2/auth")
-                            .query(queryParamsStrRedirectConsent)
-                            .build()
-            )
-            .cookies(cookies -> cookies.addAll(cookiesBeforeOauth2LoginRedirect))
-            .exchange()
-            .expectStatus()
-            .isSeeOther()
-            .expectHeader()
-            .exists("Location")
-            .expectHeader()
-            .valueMatches("Location", 
-                String.format("^%s\\?error=%s&error_description=%s\\+hint&state=%s$",
-                            redirectUri, errorModel.getError(), errorModel.getErrorDescription(), state
-                )
-            );
-    }
+    URI redirectConsentLocationURI = new URI(redirectConsentLocation);
+    var queryParamsStrRedirectConsent = redirectConsentLocationURI.getQuery();
 
-    @Test
-    @Order(3)
-    @DisplayName("Reject consent flow")
-    void rejectConsentRequest() throws URISyntaxException {
+    oryHydraInitConsentFlow(queryParamsStrRedirectConsent);
 
-        oryHydraInitLoginFlow();
+    /* BEGIN ory hydra consent flow */
 
-        /*  BEGIN ory hydra login flow */
+    var errorModel = ErrorModelBuilder
+        .builder()
+        .setError("some_error")
+        .setErrorDescription("some_description")
+        .setStatusCode(504L)
+        .build();
 
-        var acceptLoginRequestModel = Mono.just(
-            AcceptLoginRequestModelBuilder.builder()
-                .setSubject(login)
-                .setRemember(true)
-                .setRememberFor(60L * 60L * 24L)
-                .setContextModel("")
-                .build()
-        );
+    var errorModelMono = Mono.just(errorModel);
 
-        StepVerifier
-            .create(this.oryHydraService.acceptLoginRequest(loginChallenge, acceptLoginRequestModel))
-            .expectNextMatches(
-                responseWithRedirectModel -> {
+    StepVerifier
+        .create(this.oryHydraService.rejectConsentRequest(consentChallenge, errorModelMono))
+        .expectNextMatches(
+            responseWithRedirectModel -> {
 
-                redirectConsentLocation = responseWithRedirectModel.getRedirectTo();
+              redirectForContentVerifier = responseWithRedirectModel.getRedirectTo();
 
-                return redirectConsentLocation
-                            .matches(
-                                String.format(
-                                    "^https:\\/\\/%s\\/oauth2\\/auth\\?client_id=%s&code_challenge=%s&code_challenge_method=%s&login_verifier=.+&response_type=code&state=%s$",
-                                            AUTH_DOMAIN, clientId, codeChallenge, codeChallengeMethod, state)
-                            );
+              return redirectForContentVerifier
+                  .matches(
+                      String.format(
+                          "^https:\\/\\/%s\\/oauth2\\/auth\\?client_id=%s&code_challenge=%s&code_challenge_method=%s&consent_verifier=.+&response_type=code&scope=.+&state=%s$",
+                          AUTH_DOMAIN, clientId, codeChallenge, codeChallengeMethod, state));
             })
-            .verifyComplete();
+        .verifyComplete();
 
-        /*  END ory hydra login flow */
+    URI redirectForContentVerifierURI = new URI(redirectForContentVerifier);
+    var queryParamsForContentVerifier = redirectForContentVerifierURI.getQuery();
 
-        URI redirectConsentLocationURI = new URI(redirectConsentLocation);
-        var queryParamsStrRedirectConsent = redirectConsentLocationURI.getQuery();
+    /* END ory hydra consent flow */
 
-        oryHydraInitConsentFlow(queryParamsStrRedirectConsent);
+    publicWebTestClient
+        .get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("/oauth2/auth")
+                .query(queryParamsForContentVerifier)
+                .build())
+        .cookies(cookies -> {
+          cookies.addAll(cookiesBeforeOauth2ConsentRedirect);
+          cookiesBeforeOauth2LoginRedirect.entrySet()
+              .removeIf(k -> cookiesBeforeOauth2ConsentRedirect.containsKey(k.getKey()));
+          cookies.addAll(cookiesBeforeOauth2LoginRedirect);
+          cookies.add(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession);
+        })
+        .exchange()
+        .expectStatus()
+        .isSeeOther()
+        .expectHeader()
+        .exists("Location")
+        .expectHeader()
+        .valueMatches("Location",
+            String.format("^%s\\?error=%s&error_description=%s&state=%s$",
+                redirectUri, errorModel.getError(), errorModel.getErrorDescription(), state));
+  }
 
-        /*  BEGIN ory hydra consent flow */
+  @Test
+  @Order(4)
+  @DisplayName("Full exit cycle")
+  void fullCycleLogout()
+      throws URISyntaxException, UnsupportedEncodingException, NoSuchAlgorithmException {
 
-        var errorModel = 
-            ErrorModelBuilder
-                .builder()
-                .setError("some_error")
-                .setErrorDescription("some_description")
-                .setStatusCode(504L)
-                .build();
+    fullCycleAuth();
 
-        var errorModelMono = Mono.just(errorModel);
+    /* BEGIN ory hydra logout flow */
 
-        StepVerifier
-            .create(this.oryHydraService.rejectConsentRequest(consentChallenge, errorModelMono))
-            .expectNextMatches(
-                responseWithRedirectModel -> {
+    publicWebTestClient
+        .get()
+        .uri(uriBuilder -> uriBuilder
+            .path("oauth2/sessions/logout")
+            .build())
+        .cookie(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession)
+        .exchange()
+        .expectStatus()
+        .isFound()
+        .expectHeader()
+        .exists("Location")
+        .expectHeader()
+        .valueMatches("Location",
+            String.format("^https:\\/\\/%s\\/api\\/logout\\?logout_challenge=.+$",
+                AUTH_DOMAIN))
+        .expectHeader()
+        .value("Location", location -> logoutLocation = location);
 
-                redirectForContentVerifier = responseWithRedirectModel.getRedirectTo();
+    URI logoutLocationURI = new URI(logoutLocation);
+    String queryParamsStr = logoutLocationURI.getQuery();
 
-                return redirectForContentVerifier
-                            .matches(
-                                    String.format(
-                                        "^https:\\/\\/%s\\/oauth2\\/auth\\?client_id=%s&code_challenge=%s&code_challenge_method=%s&consent_verifier=.+&response_type=code&state=%s$",
-                                                AUTH_DOMAIN, clientId, codeChallenge, codeChallengeMethod, state));
+    var queryParams = Arrays
+        .stream(queryParamsStr.split("&"))
+        .map(SupportModule::splitQueryParameter)
+        .collect(
+            Collectors.groupingBy(
+                SimpleImmutableEntry::getKey,
+                LinkedHashMap::new,
+                Collectors.mapping(Map.Entry::getValue,
+                    Collectors.toList())));
+
+    logoutChallenge = queryParams.get(LOGOUT_CHALLENGE).get(0);
+
+    StepVerifier
+        .create(this.oryHydraService.logoutRequestInfo(logoutChallenge))
+        .expectNextMatches(body -> body.getSubject().equals(login))
+        .verifyComplete();
+
+    StepVerifier
+        .create(this.oryHydraService.acceptLogoutRequest(logoutChallenge))
+        .expectNextMatches(
+            responseWithRedirectModel -> {
+
+              redirectLogoutLocation = responseWithRedirectModel.getRedirectTo();
+
+              return redirectLogoutLocation
+                  .matches(
+                      String.format(
+                          "^https:\\/\\/%s\\/oauth2\\/sessions\\/logout\\?logout_verifier=.+$",
+                          AUTH_DOMAIN));
             })
-            .verifyComplete();
+        .verifyComplete();
 
-        URI redirectForContentVerifierURI = new URI(redirectForContentVerifier);
-        var queryParamsForContentVerifier = redirectForContentVerifierURI.getQuery();
+    URI redirectForLogoutVerifierURI = new URI(redirectLogoutLocation);
+    var queryParamsForLogoutVerifier = redirectForLogoutVerifierURI.getQuery();
 
-        /*  END ory hydra consent flow */
+    publicWebTestClient
+        .get()
+        .uri(
+            uriBuilder -> uriBuilder
+                .path("oauth2/sessions/logout")
+                .query(queryParamsForLogoutVerifier)
+                .build())
+        .cookie(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession)
+        .exchange()
+        .expectStatus()
+        .isFound()
+        .expectHeader()
+        .exists("Location")
+        .expectHeader()
+        .valueMatches("Location",
+            String.format("^https:\\/\\/%s\\/logout\\/success$",
+                AUTH_DOMAIN));
 
-        publicWebTestClient
-            .get()
-            .uri(
-                uriBuilder -> uriBuilder
-                                .path("/oauth2/auth")
-                                .query(queryParamsForContentVerifier)
-                                .build()
-            )
-            .cookies(cookies -> {
-                cookies.addAll(cookiesBeforeOauth2ConsentRedirect);
-                cookiesBeforeOauth2LoginRedirect.entrySet().removeIf(k -> cookiesBeforeOauth2ConsentRedirect.containsKey(k.getKey()));
-                cookies.addAll(cookiesBeforeOauth2LoginRedirect);
-                cookies.add(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession);
-            })
-            .exchange()
-            .expectStatus()
-            .isSeeOther()
-            .expectHeader()
-            .exists("Location")
-            .expectHeader()
-            .valueMatches("Location",
-                        String.format("^%s\\?error=%s&error_description=%s&state=%s$",
-                                redirectUri, errorModel.getError(), errorModel.getErrorDescription(), state));
-    }
+    /* END ory hydra logout flow */
+  }
 
-    @Test
-    @Order(4)
-    @DisplayName("Full exit cycle")
-    void fullCycleLogout()
-            throws URISyntaxException, UnsupportedEncodingException, NoSuchAlgorithmException {
+  @Test
+  @Order(5)
+  @DisplayName("reject Logout Flow")
+  void rejectLogoutRequest()
+      throws URISyntaxException, UnsupportedEncodingException, NoSuchAlgorithmException {
 
-        fullCycleAuth();
+    fullCycleAuth();
 
-        /*  BEGIN ory hydra logout flow */
+    /* BEGIN ory hydra logout flow */
 
-        publicWebTestClient
-            .get()
-            .uri(uriBuilder -> uriBuilder
-                        .path("oauth2/sessions/logout")
-                        .build())
-            .cookie(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession)
-            .exchange()
-            .expectStatus()
-            .isFound()
-            .expectHeader()
-            .exists("Location")
-            .expectHeader()
-            .valueMatches("Location",
-                        String.format("^https:\\/\\/%s\\/api\\/logout\\?logout_challenge=.+$",
-                                AUTH_DOMAIN))
-            .expectHeader()
-            .value("Location", location -> logoutLocation = location);
+    publicWebTestClient
+        .get()
+        .uri(uriBuilder -> uriBuilder
+            .path("oauth2/sessions/logout")
+            .build())
+        .cookie(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession)
+        .exchange()
+        .expectStatus()
+        .isFound()
+        .expectHeader()
+        .exists("Location")
+        .expectHeader()
+        .valueMatches("Location",
+            String.format("^https:\\/\\/%s\\/api\\/logout\\?logout_challenge=.+$",
+                AUTH_DOMAIN))
+        .expectHeader()
+        .value("Location", location -> logoutLocation = location);
 
-        URI logoutLocationURI = new URI(logoutLocation);
-        String queryParamsStr = logoutLocationURI.getQuery();
+    URI logoutLocationURI = new URI(logoutLocation);
+    String queryParamsStr = logoutLocationURI.getQuery();
 
-        var queryParams = Arrays
-                .stream(queryParamsStr.split("&"))
-                .map(SupportModule::splitQueryParameter)
-                .collect(
-                        Collectors.groupingBy(
-                                SimpleImmutableEntry::getKey,
-                                LinkedHashMap::new,
-                                Collectors.mapping(Map.Entry::getValue,
-                                        Collectors.toList())));
+    var queryParams = Arrays
+        .stream(queryParamsStr.split("&"))
+        .map(SupportModule::splitQueryParameter)
+        .collect(
+            Collectors.groupingBy(
+                SimpleImmutableEntry::getKey,
+                LinkedHashMap::new,
+                Collectors.mapping(Map.Entry::getValue,
+                    Collectors.toList())));
 
-        logoutChallenge = queryParams.get(LOGOUT_CHALLENGE).get(0);
+    logoutChallenge = queryParams.get(LOGOUT_CHALLENGE).get(0);
 
-        StepVerifier
-            .create(this.oryHydraService.logoutRequestInfo(logoutChallenge))
-            .expectNextMatches(body -> body.getSubject().equals(login))
-            .verifyComplete();
+    StepVerifier
+        .create(this.oryHydraService.logoutRequestInfo(logoutChallenge))
+        .expectNextMatches(body -> body.getSubject().equals(login))
+        .verifyComplete();
 
-        StepVerifier
-            .create(this.oryHydraService.acceptLogoutRequest(logoutChallenge))
-            .expectNextMatches(
-                responseWithRedirectModel -> {
+    StepVerifier
+        .create(this.oryHydraService.rejectLogoutRequest(logoutChallenge))
+        .verifyComplete();
 
-                redirectLogoutLocation = responseWithRedirectModel.getRedirectTo();
-
-                return redirectLogoutLocation
-                            .matches(
-                                    String.format(
-                                            "^https:\\/\\/%s\\/oauth2\\/sessions\\/logout\\?logout_verifier=.+$",
-                                            AUTH_DOMAIN));
-                })
-            .verifyComplete();
-
-        URI redirectForLogoutVerifierURI = new URI(redirectLogoutLocation);
-        var queryParamsForLogoutVerifier = redirectForLogoutVerifierURI.getQuery();
-
-        publicWebTestClient
-            .get()
-            .uri(
-                    uriBuilder -> uriBuilder
-                            .path("oauth2/sessions/logout")
-                            .query(queryParamsForLogoutVerifier)
-                            .build()
-            )
-            .cookie(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession)
-            .exchange()
-            .expectStatus()
-            .isFound()
-            .expectHeader()
-            .exists("Location")
-            .expectHeader()
-            .valueMatches("Location",
-                    String.format("^https:\\/\\/%s\\/logout\\/success$",
-                                AUTH_DOMAIN));
-
-        /*  END ory hydra logout flow */
-    }
-
-
-    @Test
-    @Order(5)
-    @DisplayName("reject Logout Flow")
-    void rejectLogoutRequest()
-            throws URISyntaxException, UnsupportedEncodingException, NoSuchAlgorithmException {
-
-        fullCycleAuth();
-
-        /*  BEGIN ory hydra logout flow */
-
-        publicWebTestClient
-            .get()
-            .uri(uriBuilder -> uriBuilder
-                        .path("oauth2/sessions/logout")
-                        .build())
-            .cookie(OAUTH2_AUTHENTICATION_SESSION, oauth2AuthenticationSession)
-            .exchange()
-            .expectStatus()
-            .isFound()
-            .expectHeader()
-            .exists("Location")
-            .expectHeader()
-            .valueMatches("Location",
-                        String.format("^https:\\/\\/%s\\/api\\/logout\\?logout_challenge=.+$",
-                                AUTH_DOMAIN))
-            .expectHeader()
-            .value("Location", location -> logoutLocation = location);
-
-        URI logoutLocationURI = new URI(logoutLocation);
-        String queryParamsStr = logoutLocationURI.getQuery();
-
-        var queryParams = Arrays
-                .stream(queryParamsStr.split("&"))
-                .map(SupportModule::splitQueryParameter)
-                .collect(
-                        Collectors.groupingBy(
-                                SimpleImmutableEntry::getKey,
-                                LinkedHashMap::new,
-                                Collectors.mapping(Map.Entry::getValue,
-                                        Collectors.toList())));
-
-        logoutChallenge = queryParams.get(LOGOUT_CHALLENGE).get(0);
-
-        StepVerifier
-            .create(this.oryHydraService.logoutRequestInfo(logoutChallenge))
-            .expectNextMatches(body -> body.getSubject().equals(login))
-            .verifyComplete();
-
-        StepVerifier
-            .create(this.oryHydraService.rejectLogoutRequest(logoutChallenge))
-            .verifyComplete();
-
-       
-        /*  END ory hydra logout flow */
-    }
+    /* END ory hydra logout flow */
+  }
 
 }

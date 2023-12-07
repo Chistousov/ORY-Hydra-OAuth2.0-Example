@@ -14,14 +14,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 public class PostLoginModel {
-    
-    @NotBlank(message = "login is blank")
-    @Size(min = 4, message = "login must be greater than 4")
-    private String login;
-    
-    @NotBlank(message = "password is blank")
-    @Pattern(regexp = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$", message = "password is invalid")
-    private String password;
 
-    private Boolean isRemember;
+  @NotBlank(message = "login is blank")
+  @Size(min = 4, message = "login must be greater than 4")
+  private String login;
+
+  @NotBlank(message = "password is blank")
+  @Pattern(regexp = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$", message = "password is invalid")
+  private String password;
+
+  private Boolean isRemember;
 }

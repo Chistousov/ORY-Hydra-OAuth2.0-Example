@@ -9,8 +9,8 @@ import com.github.chistousov.write_and_read_backend.jacoco_ignore.ExcludeFromJac
 @ExcludeFromJacocoGeneratedReport
 public class WriteAndReadBackendApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(WriteAndReadBackendApplication.class, args);
-	}
+  public static void main(String[] args) {
+    SpringApplication.run(WriteAndReadBackendApplication.class, args);
+  }
 
 }

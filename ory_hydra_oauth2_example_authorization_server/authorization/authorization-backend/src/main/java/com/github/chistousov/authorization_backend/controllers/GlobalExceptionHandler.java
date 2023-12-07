@@ -30,78 +30,79 @@ import reactor.core.publisher.Mono;
 @ExcludeFromJacocoGeneratedReport
 public class GlobalExceptionHandler {
 
-    private static final String TEXT_PLAIN_CHARSET_UTF_8 = "text/plain;charset=utf-8";
-    private static final String CONTENT_TYPE = "Content-Type";
+  private static final String TEXT_PLAIN_CHARSET_UTF_8 = "text/plain;charset=utf-8";
+  private static final String CONTENT_TYPE = "Content-Type";
 
-    private static final String ERROR_IN_DATABASE_MESSAGE = "Database error ";
+  private static final String ERROR_IN_DATABASE_MESSAGE = "Database error ";
 
-    // invalid model handler
-    @ExceptionHandler(WebExchangeBindException.class)
-    public ResponseEntity<List<String>> handleException(WebExchangeBindException e) {
-        var errors = e.getBindingResult()
-                .getAllErrors()
-                .stream()
-                .map(DefaultMessageSourceResolvable::getDefaultMessage)
-                .collect(Collectors.toList());
-        return ResponseEntity.badRequest().body(errors);
+  // invalid model handler
+  @ExceptionHandler(WebExchangeBindException.class)
+  public ResponseEntity<List<String>> handleException(WebExchangeBindException e) {
+    var errors = e.getBindingResult()
+        .getAllErrors()
+        .stream()
+        .map(DefaultMessageSourceResolvable::getDefaultMessage)
+        .collect(Collectors.toList());
+    return ResponseEntity.badRequest().body(errors);
 
-    }
+  }
 
-    @ExceptionHandler(DataAccessException.class)
-    public Mono<Void> dataBaseHandler(ServerHttpRequest req, ServerHttpResponse response, DataAccessException ex){
-        
-        response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
-        response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-        
-        byte[] bodyResponse = ERROR_IN_DATABASE_MESSAGE.getBytes(StandardCharsets.UTF_8);
-        DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
+  @ExceptionHandler(DataAccessException.class)
+  public Mono<Void> dataBaseHandler(ServerHttpRequest req, ServerHttpResponse response, DataAccessException ex) {
 
-        return response.writeWith(Flux.just(buffer))
-            .doOnEach(el -> log.error(req.getPath().toString()+" ", ex));
-    }
+    response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
+    response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
 
+    byte[] bodyResponse = ERROR_IN_DATABASE_MESSAGE.getBytes(StandardCharsets.UTF_8);
+    DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
 
-    @ExceptionHandler({LoginDoesNotExistException.class, IncorrectPasswordException.class, LoginOrOrgExistException.class})
-    public Mono<Void> anyExceptionHandler(ServerHttpRequest req, ServerHttpResponse response, RuntimeException ex){
+    return response.writeWith(Flux.just(buffer))
+        .doOnEach(el -> log.error(req.getPath().toString() + " ", ex));
+  }
 
-        response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
-        response.setStatusCode(HttpStatus.BAD_REQUEST);
+  @ExceptionHandler({ LoginDoesNotExistException.class, IncorrectPasswordException.class,
+      LoginOrOrgExistException.class })
+  public Mono<Void> anyExceptionHandler(ServerHttpRequest req, ServerHttpResponse response, RuntimeException ex) {
 
-        Optional<String> errorMesOptional = Optional.ofNullable(ex.getMessage());
-        String errorMes = errorMesOptional.orElseGet(()-> ERROR_IN_DATABASE_MESSAGE);
+    response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
+    response.setStatusCode(HttpStatus.BAD_REQUEST);
 
-        byte[] bodyResponse = errorMes.getBytes(StandardCharsets.UTF_8);
-        DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
+    Optional<String> errorMesOptional = Optional.ofNullable(ex.getMessage());
+    String errorMes = errorMesOptional.orElseGet(() -> ERROR_IN_DATABASE_MESSAGE);
 
-        return response.writeWith(Flux.just(buffer))
-            .doOnEach(el -> log.error(req.getPath().toString()+" ", ex));
-    }
+    byte[] bodyResponse = errorMes.getBytes(StandardCharsets.UTF_8);
+    DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public Mono<Void> illegalArgumentPerfom(ServerHttpRequest req, ServerHttpResponse response, IllegalArgumentException ex){
-        
-        response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
-        response.setStatusCode(HttpStatus.BAD_REQUEST);
-        
-        byte[] bodyResponse = "Request received with incorrect data ".getBytes(StandardCharsets.UTF_8);
-        DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
+    return response.writeWith(Flux.just(buffer))
+        .doOnEach(el -> log.error(req.getPath().toString() + " ", ex));
+  }
 
-        return response.writeWith(Flux.just(buffer))
-                    .doOnEach(el -> log.error(req.getPath().toString()+" ", ex));
-        
-    }
+  @ExceptionHandler(IllegalArgumentException.class)
+  public Mono<Void> illegalArgumentPerfom(ServerHttpRequest req, ServerHttpResponse response,
+      IllegalArgumentException ex) {
 
-    @ExceptionHandler(Exception.class)
-    public Mono<Void> commonHandler(ServerHttpRequest req, ServerHttpResponse response, Exception ex){
+    response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
+    response.setStatusCode(HttpStatus.BAD_REQUEST);
 
-        response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
-        response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
-        
-        byte[] bodyResponse = "Error in server ".getBytes(StandardCharsets.UTF_8);
-        DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
+    byte[] bodyResponse = "Request received with incorrect data ".getBytes(StandardCharsets.UTF_8);
+    DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
 
-        return response.writeWith(Flux.just(buffer))
-            .doOnEach(el -> log.error(req.getPath().toString()+" ", ex));
-    }
-    
+    return response.writeWith(Flux.just(buffer))
+        .doOnEach(el -> log.error(req.getPath().toString() + " ", ex));
+
+  }
+
+  @ExceptionHandler(Exception.class)
+  public Mono<Void> commonHandler(ServerHttpRequest req, ServerHttpResponse response, Exception ex) {
+
+    response.getHeaders().set(CONTENT_TYPE, TEXT_PLAIN_CHARSET_UTF_8);
+    response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+
+    byte[] bodyResponse = "Error in server ".getBytes(StandardCharsets.UTF_8);
+    DataBuffer buffer = response.bufferFactory().wrap(bodyResponse);
+
+    return response.writeWith(Flux.just(buffer))
+        .doOnEach(el -> log.error(req.getPath().toString() + " ", ex));
+  }
+
 }

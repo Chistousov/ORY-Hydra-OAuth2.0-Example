@@ -10,22 +10,22 @@ import lombok.Getter;
 @Getter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AcceptConsentRequestModel {
-    
-    private Boolean remember;
-    
-    private SessionForTokenModel session;
-    
-    @JsonProperty("grant_scope")
-    private List<String> grantScope;
-    
-    @JsonProperty("remember_for")
-    private Long rememberFor;
 
-    public AcceptConsentRequestModel(AcceptConsentRequestModelBuilder builder){
-        this.remember = builder.getRemember();
-        this.session = builder.getSession();
-        this.grantScope = builder.getGrantScope();
-        this.rememberFor = builder.getRememberFor();
-    }
+  private Boolean remember;
+
+  private SessionForTokenModel session;
+
+  @JsonProperty("grant_scope")
+  private List<String> grantScope;
+
+  @JsonProperty("remember_for")
+  private Long rememberFor;
+
+  public AcceptConsentRequestModel(AcceptConsentRequestModelBuilder builder) {
+    this.remember = builder.getRemember();
+    this.session = builder.getSession();
+    this.grantScope = builder.getGrantScope();
+    this.rememberFor = builder.getRememberFor();
+  }
 
 }
