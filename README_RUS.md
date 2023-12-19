@@ -127,181 +127,48 @@ REPO_IMAGE="chistousov"
 | OAuth 2.0 Client (Write and read)              | client-write-and-read.com | 192.168.0.103 |
 | OAuth 2.0 Resource Server                      | resource-server.com       | 192.168.0.104 |
 
-Требуется Docker, Docker Compose, JDK 11(keytool), openssl, jq (apt install jq), htpasswd (apt install apache2-utils) на всех четырех Debian серверах.
+Требуется openssl, jq (apt install jq), htpasswd (apt install apache2-utils), envsubst для выполнения start.bash.
 
-### OAuth 2.0 Authorization Server
+Требуется на удаленных серверах: Docker, Docker Compose (V3)
 
-Переходим в папку с OAuth 2.0 Authorization Server
-
+Организовываем ssh и согласуем настройки с .env файлом 
 ```bash
-cd ory_hydra_oauth2_example_authorization_server
-```
+# ------------------!!!EDIT!!!----------------
 
-Редактируем переменные окружения в начале файла start.bash. Чтоб узнать ip адрес можно выполнить ***ip a***.
+IP_AUTHORIZATION_SERVER=192.168.0.101
+IP_RESOURCE_SERVER=192.168.0.104
+IP_CLIENT_READONLY=192.168.0.101
+IP_CLIENT_WRITE_AND_READ=192.168.0.103
 
-```bash
+DNS_AUTHORIZATION_SERVER=authorization-server.com
+DNS_RESOURCE_SERVER=resource-server.com
+DNS_CLIENT_READONLY=client-readonly.com
+DNS_CLIENT_WRITE_AND_READ=client-write-and-read.com
 
-    # ------------------!!!EDIT!!!----------------
+USER_AUTHORIZATION_SERVER=someuser
+USER_RESOURCE_SERVER=someuser
+USER_CLIENT_READONLY=someuser
+USER_CLIENT_WRITE_AND_READ=someuser
 
-    USER_DATA_POSTGRESQL_PASSWORD="cklGS7BNMT6Io9Yd8FKzg4ZmWLXjQnA24JbXNHbG"
+USER_DATA_POSTGRESQL_PASSWORD=cklGS7BNMT6Io9Yd8FKzg4ZmWLXjQnA24JbXNHbG
 
-    HYDRA_POSTGRESQL_PASSWORD="7pj3gK8arVwk6A1BbUD2XysfIYmKdEk0DL8BMRNx"
+HYDRA_POSTGRESQL_PASSWORD=7pj3gK8arVwk6A1BbUD2XysfIYmKdEk0DL8BMRNx
 
-    HYDRA_SECRETS_COOKIE="OT9Z8I2NcBp01rP4FwQG7JEt6nuXeJ0BDpf4Bjwc"
-    HYDRA_SECRETS_SYSTEM="cIsKS4VzJCDpXlwm2PNTb7v60GHh1iEYZPiiPpRS"
+HYDRA_SECRETS_COOKIE=OT9Z8I2NcBp01rP4FwQG7JEt6nuXeJ0BDpf4Bjwc
+HYDRA_SECRETS_SYSTEM=cIsKS4VzJCDpXlwm2PNTb7v60GHh1iEYZPiiPpRS
     
-    HYDRA_INTROSPECT_USER="user_introspect"
-    HYDRA_INTROSPECT_PASSWORD="hUq7Mw3fr4lFjnHQtoJucgDdAV58NbAOvuGN2OfB"
+HYDRA_INTROSPECT_USER=user_introspect
+HYDRA_INTROSPECT_PASSWORD=hUq7Mw3fr4lFjnHQtoJucgDdAV58NbAOvuGN2OfB
 
-    # ------------------------------------------
-    ...
-
-```
-
-**ВНИМАНИЕ!** Необходимы права на запуск docker (sudo usermod -aG docker \[user\])
-
-Запускаем приложение:
-
-```bash
-bash start.bash
-```
-
-Запоминаем **HYDRA_INTROSPECT_USER**, **HYDRA_INTROSPECT_PASSWORD** и :
-
-```bash
-cat .env_readonly
-#CLIENT_READONLY_CLIENT_ID="6fe1db34-b439-4fcd-b748-c86da054f8b6"
-#CLIENT_READONLY_CLIENT_SECRET="FF~3b967-z6f4mlgmq_swJ6By~"
-cat .env_read_and_write
-#CLIENT_WRITE_AND_READ_CLIENT_ID="3f684231-e17a-4d1b-b39a-eb26af9f7d27"
-#CLIENT_WRITE_AND_READ_CLIENT_SECRET="6bf9Le7LuurMd5in4B61Bt43kp"
+# ------------------------------------------
 
 ```
 
-### OAuth 2.0 Resource Server
+Чтоб узнать ip адрес можно выполнить ***ip a***.
 
-Переходим в папку с OAuth 2.0 Resource Server
+**ВНИМАНИЕ!** Пользователи USER_AUTHORIZATION_SERVER, USER_RESOURCE_SERVER, USER_CLIENT_READONLY и USER_CLIENT_WRITE_AND_READ должны иметь право запускать docker compose (V3) (sudo usermod -aG docker \[user\]).
 
-```bash
-cd ory_hydra_oauth2_example_resource_server
-```
-
-Редактируем переменные окружения в начале файла start.bash. Чтоб узнать ip адрес можно выполнить ***ip a***.
-
-```bash
-
-   # ------------------!!!EDIT!!!----------------
-
-    IP_AUTHORIZATION_SERVER="192.168.0.101"
-
-    HYDRA_INTROSPECT_USER="user_introspect"
-    HYDRA_INTROSPECT_PASSWORD="hUq7Mw3fr4lFjnHQtoJucgDdAV58NbAOvuGN2OfB"
-
-    # ------------------------------------------
-    ...
-
-```
-
-Копируем с сервера OAuth 2.0 Authorization Server CA certificate в папку ca-certificates:
-
-```text
-ory_hydra_oauth2_example_authorization_server/CAForNginx/ca.crt -> ory_hydra_oauth2_example_resource_server/ca-certificates/auth.crt
-```
-
-**ВНИМАНИЕ!** Необходимы права на запуск docker (sudo usermod -aG docker \[user\])
-
-Запускаем приложение:
-
-```bash
-bash start.bash
-```
-
-### OAuth 2.0 Client (Readonly)
-
-Переходим в папку с OAuth 2.0 Client (Readonly)
-
-```bash
-cd ory_hydra_oauth2_example_client_readonly
-```
-
-Редактируем переменные окружения в начале файла start.bash. Чтоб узнать ip адрес можно выполнить ***ip a***.
-
-```bash
-
-   # ------------------!!!EDIT!!!----------------
-
-    IP_AUTHORIZATION_SERVER="192.168.0.101"
-    IP_RESOURCE_SERVER="192.168.0.104"
-
-    CLIENT_READONLY_CLIENT_ID="6fe1db34-b439-4fcd-b748-c86da054f8b6"
-    CLIENT_READONLY_CLIENT_SECRET="FF~3b967-z6f4mlgmq_swJ6By~"
-
-    # ------------------------------------------
-    ...
-
-```
-
-Копируем с сервера OAuth 2.0 Authorization Server CA certificate в папку ca-certificates:
-
-```text
-ory_hydra_oauth2_example_authorization_server/CAForNginx/ca.crt -> ory_hydra_oauth2_example_client_readonly/ca-certificates/auth.crt
-```
-
-Копируем с сервера OAuth 2.0 Resource Server CA certificate в папку ca-certificates:
-
-```text
-ory_hydra_oauth2_example_resource_server/CAForNginx/ca.crt -> ory_hydra_oauth2_example_client_readonly/ca-certificates/resource_server.crt
-```
-
-**ВНИМАНИЕ!** Необходимы права на запуск docker (sudo usermod -aG docker \[user\])
-
-Запускаем приложение:
-
-```bash
-bash start.bash
-```
-
-### OAuth 2.0 Client (Write and read)
-
-Переходим в папку с OAuth 2.0 Client (Write and read)
-
-```bash
-cd ory_hydra_oauth2_example_client_write_and_read
-```
-
-Редактируем переменные окружения в начале файла start.bash. Чтоб узнать ip адрес можно выполнить ***ip a***.
-
-```bash
-
-   # ------------------!!!EDIT!!!----------------
-
-    IP_AUTHORIZATION_SERVER="192.168.0.101"
-    IP_RESOURCE_SERVER="192.168.0.104"
-    
-    CLIENT_WRITE_AND_READ_CLIENT_ID="3f684231-e17a-4d1b-b39a-eb26af9f7d27"
-    CLIENT_WRITE_AND_READ_CLIENT_SECRET="6bf9Le7LuurMd5in4B61Bt43kp"
-
-    # ------------------------------------------
-    ...
-
-```
-
-Копируем с сервера OAuth 2.0 Authorization Server CA certificate в папку ca-certificates:
-
-```text
-ory_hydra_oauth2_example_authorization_server/CAForNginx/ca.crt -> ory_hydra_oauth2_example_client_write_and_read/ca-certificates/auth.crt
-```
-
-Копируем с сервера OAuth 2.0 Resource Server CA certificate в папку ca-certificates:
-
-```text
-ory_hydra_oauth2_example_resource_server/CAForNginx/ca.crt -> ory_hydra_oauth2_example_client_write_and_read/ca-certificates/resource_server.crt
-```
-
-**ВНИМАНИЕ!** Необходимы права на запуск docker (sudo usermod -aG docker \[user\])
-
-Запускаем приложение:
-
+Запускаем скрипт для конфигурирования четырех серверов:
 ```bash
 bash start.bash
 ```
@@ -311,6 +178,12 @@ bash start.bash
 На компьютере Resource Owner ОПИСЫВАЕМ IP АДРЕСА В ФАЙЛЕ /etc/hosts (Linux).
 
 ```bash
+# Допустим
+#DNS_AUTHORIZATION_SERVER=authorization-server.com
+#DNS_RESOURCE_SERVER=resource-server.com
+#DNS_CLIENT_READONLY=client-readonly.com
+#DNS_CLIENT_WRITE_AND_READ=client-write-and-read.com
+
 echo '192.168.0.101 authorization-server.com' >> /etc/hosts
 echo '192.168.0.102 client-readonly.com' >> /etc/hosts
 echo '192.168.0.103 client-write-and-read.com' >> /etc/hosts
@@ -327,22 +200,6 @@ ping resource-server.com
 2. Так как пользоавтель не вошел в систему, то пользователя перебрасывает на <https://authorization-server.com/login> (Login Flow, аутентификация), потом на <https://authorization-server.com/consent> (Consent Flow, авторизация).
 3. Далее пользователь попадает обратно на <https://client-readonly.com>.
 4. Для получения данных OAuth 2.0 Client (Readonly) обращается на <https://resource-server.com> с access token.
-
-### Stop
-
-Останавливаем контейнеры с сохранением данных (volume).
-
-```bash
-bash stop.bash
-```
-
-### Stop and clean
-
-Останавливаем контейнеры и удаляем все данные(volume).
-
-```bash
-bash stop_and_clean.bash
-```
 
 ## Creators
 

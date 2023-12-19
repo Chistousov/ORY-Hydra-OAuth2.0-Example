@@ -1,10 +1,10 @@
 server {
     listen 443 ssl;
     http2 on;
-    server_name resource-server.com;
+    server_name ${DNS_RESOURCE_SERVER};
 
-    ssl_certificate /cert/resource-server.com/resource-server.com.crt;
-    ssl_certificate_key /cert/resource-server.com/resource-server.com.key;
+    ssl_certificate /cert/${DNS_RESOURCE_SERVER}/${DNS_RESOURCE_SERVER}.crt;
+    ssl_certificate_key /cert/${DNS_RESOURCE_SERVER}/${DNS_RESOURCE_SERVER}.key;
 
     add_header Strict-Transport-Security "max-age=31536000; preload" always;
     add_header X-Content-Type-Options "nosniff";

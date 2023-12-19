@@ -23,16 +23,16 @@ services:
 
         -Dspring.security.oauth2.client.registration.client-write-and-read.client-id=${CLIENT_WRITE_AND_READ_CLIENT_ID}
         -Dspring.security.oauth2.client.registration.client-write-and-read.client-secret=${CLIENT_WRITE_AND_READ_CLIENT_SECRET}
-        -Dspring.security.oauth2.client.registration.client-write-and-read.redirect-uri=https://client-write-and-read.com/api/login/oauth2/code/client-write-and-read
+        -Dspring.security.oauth2.client.registration.client-write-and-read.redirect-uri=https://${DNS_CLIENT_WRITE_AND_READ}/api/login/oauth2/code/client-write-and-read
         -Dspring.security.oauth2.client.registration.client-write-and-read.scope="read,write"
         
-        -Dspring.security.oauth2.client.provider.spring.authorization-uri=https://authorization-server.com/oauth2/auth
-        -Dspring.security.oauth2.client.provider.spring.token-uri=https://authorization-server.com/oauth2/token
-        -Dspring.security.oauth2.client.provider.spring.user-info-uri=https://authorization-server.com/userinfo
+        -Dspring.security.oauth2.client.provider.spring.authorization-uri=https://${DNS_AUTHORIZATION_SERVER}/oauth2/auth
+        -Dspring.security.oauth2.client.provider.spring.token-uri=https://${DNS_AUTHORIZATION_SERVER}/oauth2/token
+        -Dspring.security.oauth2.client.provider.spring.user-info-uri=https://${DNS_AUTHORIZATION_SERVER}/userinfo
         -Dspring.security.oauth2.client.provider.spring.user-name-attribute=sub
         
         -Dapplication.frontend.error-oauth2-page="/error"
-        -Dapplication.resource-server="https://resource-server.com/"
+        -Dapplication.resource-server="https://${DNS_RESOURCE_SERVER}/"
 
     user: "1005"
     mem_limit: 1G
@@ -62,8 +62,8 @@ services:
     networks:
       - app-network
     extra_hosts:
-      - "authorization-server.com:${IP_AUTHORIZATION_SERVER}"
-      - "resource-server.com:${IP_RESOURCE_SERVER}"
+      - "${DNS_AUTHORIZATION_SERVER}:${IP_AUTHORIZATION_SERVER}"
+      - "${DNS_RESOURCE_SERVER}:${IP_RESOURCE_SERVER}"
 
   ory-hydra-oauth2-example-client-write-and-read-frontend:
     image: chistousov/ory-hydra-oauth2-example-client-write-and-read-frontend:1.0.0

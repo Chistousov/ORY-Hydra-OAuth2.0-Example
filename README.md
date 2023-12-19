@@ -129,181 +129,48 @@ REPO_IMAGE="chistousov"
 | OAuth 2.0 Client (Write and read)              | client-write-and-read.com | 192.168.0.103 |
 | OAuth 2.0 Resource Server                      | resource-server.com       | 192.168.0.104 |
 
-Requires Docker, Docker Compose, JDK 11(keytool), openssl, jq (apt install jq), htpasswd (apt install apache2-utils) on all four Debian servers.
+Requires openssl, jq (apt install jq), htpasswd (apt install apache2-utils), envsubst to run start.bash.
 
-### OAuth 2.0 Authorization Server
+Required on remote servers: Docker, Docker Compose (V3)
 
-Go to the folder with OAuth 2.0 Authorization Server
-
+We organize ssh and coordinate the settings with the .env file
 ```bash
-cd ory_hydra_oauth2_example_authorization_server
-```
+# ------------------!!!EDIT!!!----------------
 
-We edit the environment variables at the beginning of the start.bash file. To find out the IP address you can run ***ip a***.
+IP_AUTHORIZATION_SERVER=192.168.0.101
+IP_RESOURCE_SERVER=192.168.0.104
+IP_CLIENT_READONLY=192.168.0.101
+IP_CLIENT_WRITE_AND_READ=192.168.0.103
 
-```bash
+DNS_AUTHORIZATION_SERVER=authorization-server.com
+DNS_RESOURCE_SERVER=resource-server.com
+DNS_CLIENT_READONLY=client-readonly.com
+DNS_CLIENT_WRITE_AND_READ=client-write-and-read.com
 
-    # ------------------!!!EDIT!!!----------------
+USER_AUTHORIZATION_SERVER=someuser
+USER_RESOURCE_SERVER=someuser
+USER_CLIENT_READONLY=someuser
+USER_CLIENT_WRITE_AND_READ=someuser
 
-    USER_DATA_POSTGRESQL_PASSWORD="cklGS7BNMT6Io9Yd8FKzg4ZmWLXjQnA24JbXNHbG"
+USER_DATA_POSTGRESQL_PASSWORD=cklGS7BNMT6Io9Yd8FKzg4ZmWLXjQnA24JbXNHbG
 
-    HYDRA_POSTGRESQL_PASSWORD="7pj3gK8arVwk6A1BbUD2XysfIYmKdEk0DL8BMRNx"
+HYDRA_POSTGRESQL_PASSWORD=7pj3gK8arVwk6A1BbUD2XysfIYmKdEk0DL8BMRNx
 
-    HYDRA_SECRETS_COOKIE="OT9Z8I2NcBp01rP4FwQG7JEt6nuXeJ0BDpf4Bjwc"
-    HYDRA_SECRETS_SYSTEM="cIsKS4VzJCDpXlwm2PNTb7v60GHh1iEYZPiiPpRS"
+HYDRA_SECRETS_COOKIE=OT9Z8I2NcBp01rP4FwQG7JEt6nuXeJ0BDpf4Bjwc
+HYDRA_SECRETS_SYSTEM=cIsKS4VzJCDpXlwm2PNTb7v60GHh1iEYZPiiPpRS
     
-    HYDRA_INTROSPECT_USER="user_introspect"
-    HYDRA_INTROSPECT_PASSWORD="hUq7Mw3fr4lFjnHQtoJucgDdAV58NbAOvuGN2OfB"
+HYDRA_INTROSPECT_USER=user_introspect
+HYDRA_INTROSPECT_PASSWORD=hUq7Mw3fr4lFjnHQtoJucgDdAV58NbAOvuGN2OfB
 
-    # ------------------------------------------
-    ...
-
-```
-
-**WARNING!** Permission to run docker is required (sudo usermod -aG docker \[user\]
-
-Launch the application:
-
-```bash
-bash start.bash
-```
-
-We remember **HYDRA_INTROSPECT_USER**, **HYDRA_INTROSPECT_PASSWORD** and:
-
-```bash
-cat .env_readonly
-#CLIENT_READONLY_CLIENT_ID="6fe1db34-b439-4fcd-b748-c86da054f8b6"
-#CLIENT_READONLY_CLIENT_SECRET="FF~3b967-z6f4mlgmq_swJ6By~"
-cat .env_read_and_write
-#CLIENT_WRITE_AND_READ_CLIENT_ID="3f684231-e17a-4d1b-b39a-eb26af9f7d27"
-#CLIENT_WRITE_AND_READ_CLIENT_SECRET="6bf9Le7LuurMd5in4B61Bt43kp"
+# ------------------------------------------
 
 ```
 
-### OAuth 2.0 Resource Server
+To find out the IP address you can run ***ip a***.
 
-Go to the folder with OAuth 2.0 Resource Server
+**WARNING!** Users USER_AUTHORIZATION_SERVER, USER_RESOURCE_SERVER, USER_CLIENT_READONLY and USER_CLIENT_WRITE_AND_READ must be allowed to run docker compose (V3) (sudo usermod -aG docker \[user\]).
 
-```bash
-cd ory_hydra_oauth2_example_resource_server
-```
-
-We edit the environment variables at the beginning of the start.bash file. To find out the IP address you can run ***ip a***.
-
-```bash
-
-   # ------------------!!!EDIT!!!----------------
-
-    IP_AUTHORIZATION_SERVER="192.168.0.101"
-
-    HYDRA_INTROSPECT_USER="user_introspect"
-    HYDRA_INTROSPECT_PASSWORD="hUq7Mw3fr4lFjnHQtoJucgDdAV58NbAOvuGN2OfB"
-
-    # ------------------------------------------
-    ...
-
-```
-
-Copy the CA certificate from the OAuth 2.0 Authorization Server to the ca-certificates folder:
-
-```text
-ory_hydra_oauth2_example_authorization_server/CAForNginx/ca.crt -> ory_hydra_oauth2_example_resource_server/ca-certificates/auth.crt
-```
-
-**WARNING!** Permission to run docker is required (sudo usermod -aG docker \[user\])
-
-Launch the application:
-
-```bash
-bash start.bash
-```
-
-### OAuth 2.0 Client (Readonly)
-
-Go to the folder with OAuth 2.0 Client (Readonly)
-
-```bash
-cd ory_hydra_oauth2_example_client_readonly
-```
-
-We edit the environment variables at the beginning of the start.bash file. To find out the IP address you can run ***ip a***.
-
-```bash
-
-   # ------------------!!!EDIT!!!----------------
-
-    IP_AUTHORIZATION_SERVER="192.168.0.101"
-    IP_RESOURCE_SERVER="192.168.0.104"
-
-    CLIENT_READONLY_CLIENT_ID="6fe1db34-b439-4fcd-b748-c86da054f8b6"
-    CLIENT_READONLY_CLIENT_SECRET="FF~3b967-z6f4mlgmq_swJ6By~"
-
-    # ------------------------------------------
-    ...
-
-```
-
-Copy the CA certificate from the OAuth 2.0 Authorization Server to the ca-certificates folder:
-
-```text
-ory_hydra_oauth2_example_authorization_server/CAForNginx/ca.crt -> ory_hydra_oauth2_example_client_readonly/ca-certificates/auth.crt
-```
-
-Copy the CA certificate from the OAuth 2.0 Resource Server to the ca-certificates folder:
-
-```text
-ory_hydra_oauth2_example_resource_server/CAForNginx/ca.crt -> ory_hydra_oauth2_example_client_readonly/ca-certificates/resource_server.crt
-```
-
-**WARNING!** Permission to run docker is required (sudo usermod -aG docker \[user\])
-
-Launch the application:
-
-```bash
-bash start.bash
-```
-
-### OAuth 2.0 Client (Write and read)
-
-Go to the folder with OAuth 2.0 Client (Write and read)
-
-```bash
-cd ory_hydra_oauth2_example_client_write_and_read
-```
-
-We edit the environment variables at the beginning of the start.bash file. To find out the IP address you can run ***ip a***.
-
-```bash
-
-   # ------------------!!!EDIT!!!----------------
-
-    IP_AUTHORIZATION_SERVER="192.168.0.101"
-    IP_RESOURCE_SERVER="192.168.0.104"
-    
-    CLIENT_WRITE_AND_READ_CLIENT_ID="3f684231-e17a-4d1b-b39a-eb26af9f7d27"
-    CLIENT_WRITE_AND_READ_CLIENT_SECRET="6bf9Le7LuurMd5in4B61Bt43kp"
-
-    # ------------------------------------------
-    ...
-
-```
-
-Copy the CA certificate from the OAuth 2.0 Authorization Server to the ca-certificates folder:
-
-```text
-ory_hydra_oauth2_example_authorization_server/CAForNginx/ca.crt -> ory_hydra_oauth2_example_client_write_and_read/ca-certificates/auth.crt
-```
-
-Copy the CA certificate from the OAuth 2.0 Resource Server to the ca-certificates folder
-
-```text
-ory_hydra_oauth2_example_resource_server/CAForNginx/ca.crt -> ory_hydra_oauth2_example_client_write_and_read/ca-certificates/resource_server.crt
-```
-
-**WARNING!** Permission to run docker is required (sudo usermod -aG docker \[user\])
-
-Launch the application:
-
+We run the script to configure four servers:
 ```bash
 bash start.bash
 ```
@@ -313,6 +180,12 @@ bash start.bash
 On the Resource Owner computer, DESCRIBE IP ADDRESSES IN THE FILE /etc/hosts (Linux).
 
 ```bash
+# Let's say
+#DNS_AUTHORIZATION_SERVER=authorization-server.com
+#DNS_RESOURCE_SERVER=resource-server.com
+#DNS_CLIENT_READONLY=client-readonly.com
+#DNS_CLIENT_WRITE_AND_READ=client-write-and-read.com
+
 echo '192.168.0.101 authorization-server.com' >> /etc/hosts
 echo '192.168.0.102 client-readonly.com' >> /etc/hosts
 echo '192.168.0.103 client-write-and-read.com' >> /etc/hosts
@@ -326,25 +199,9 @@ ping resource-server.com
 
 0. Register Resource Owner <https://authorization-server.com/registration>.
 1. Go to <https://client-readonly.com>.
-2. Since the user is not logged in, the user is redirected to <https://authorization-server.com/login> (Login Flow, authentication), then to <https://authorization-server.com/consent> (Consent Flow , authorization).
+2. Since the user is not logged in, the user is redirected to <https://authorization-server.com/login> (Login Flow, authentication), then to <https://authorization-server.com/consent> (Consent Flow, authorization).
 3. Next, the user is taken back to <https://client-readonly.com>.
 4. To receive data, OAuth 2.0 Client (Readonly) contacts <https://resource-server.com> with an access token.
-
-### Stop
-
-Stopping containers that save data (volume).
-
-```bash
-bash stop.bash
-```
-
-### Stop and clean
-
-We stop the containers and delete all data (volume).
-
-```bash
-bash stop_and_clean.bash
-```
 
 ## Creators
 

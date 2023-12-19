@@ -1,10 +1,10 @@
 server {
     listen 443 ssl;
     http2 on;
-    server_name authorization-server.com;
+    server_name ${DNS_AUTHORIZATION_SERVER};
 
-    ssl_certificate /cert/authorization-server.com/authorization-server.com.crt;
-    ssl_certificate_key /cert/authorization-server.com/authorization-server.com.key;
+    ssl_certificate /cert/${DNS_AUTHORIZATION_SERVER}/${DNS_AUTHORIZATION_SERVER}.crt;
+    ssl_certificate_key /cert/${DNS_AUTHORIZATION_SERVER}/${DNS_AUTHORIZATION_SERVER}.key;
 
     add_header Strict-Transport-Security "max-age=31536000; preload" always;
     add_header X-Content-Type-Options "nosniff";

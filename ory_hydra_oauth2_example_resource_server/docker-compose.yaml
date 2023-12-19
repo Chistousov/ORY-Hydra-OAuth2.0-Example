@@ -23,7 +23,7 @@ services:
 
         -Dspring.security.oauth2.resourceserver.opaquetoken.client-id=${HYDRA_INTROSPECT_USER}
         -Dspring.security.oauth2.resourceserver.opaquetoken.client-secret=${HYDRA_INTROSPECT_PASSWORD}
-        -Dspring.security.oauth2.resourceserver.opaquetoken.introspection-uri=https://authorization-server.com/admin/oauth2/introspect
+        -Dspring.security.oauth2.resourceserver.opaquetoken.introspection-uri=https://${DNS_AUTHORIZATION_SERVER}/admin/oauth2/introspect
         
     user: "1005"
     mem_limit: 1G
@@ -53,7 +53,7 @@ services:
     networks:
       - app-network
     extra_hosts:
-      - "authorization-server.com:${IP_AUTHORIZATION_SERVER}"
+      - "${DNS_AUTHORIZATION_SERVER}:${IP_AUTHORIZATION_SERVER}"
 
 
   ory-hydra-oauth2-example-resource-server-gateway-nginx:
