@@ -139,7 +139,7 @@ We organize ssh and coordinate the settings with the .env file
 
 IP_AUTHORIZATION_SERVER=192.168.0.101
 IP_RESOURCE_SERVER=192.168.0.104
-IP_CLIENT_READONLY=192.168.0.101
+IP_CLIENT_READONLY=192.168.0.102
 IP_CLIENT_WRITE_AND_READ=192.168.0.103
 
 DNS_AUTHORIZATION_SERVER=authorization-server.com
@@ -202,6 +202,24 @@ ping resource-server.com
 2. Since the user is not logged in, the user is redirected to <https://authorization-server.com/login> (Login Flow, authentication), then to <https://authorization-server.com/consent> (Consent Flow, authorization).
 3. Next, the user is taken back to <https://client-readonly.com>.
 4. To receive data, OAuth 2.0 Client (Readonly) contacts <https://resource-server.com> with an access token.
+
+
+### Stop
+
+Stopping containers that save data (volume).
+
+```bash
+bash stop.bash
+```
+
+### Stop and clean
+
+We stop the containers and delete all data (volume).
+
+```bash
+bash stop_and_clean.bash
+```
+
 
 ## Creators
 

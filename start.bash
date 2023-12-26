@@ -88,6 +88,7 @@ echo "------------------------------------------------------"
 
 echo "------------------ generate login and password introspect for authorization server ------------------"
 htpasswd -bcB -C 10 htpasswd_introspect ${HYDRA_INTROSPECT_USER} ${HYDRA_INTROSPECT_PASSWORD}
+mv htpasswd_introspect ${AUTH_DIR}/nginx/confs/htpasswd_introspect
 echo "------------------------------------------------------"
 
 echo "------------------ generate CA gateway nginx for authorization server ------------------"
@@ -115,6 +116,7 @@ echo "------------------ remote copy nginx for authorization server-------------
 DNS_AUTHORIZATION_SERVER=${DNS_AUTHORIZATION_SERVER} envsubst '$DNS_AUTHORIZATION_SERVER' < ${AUTH_DIR}/nginx/confs/authorization-server.conf.templ > ${AUTH_DIR}/nginx/confs/authorization-server.conf
 scp -r ${AUTH_DIR}/nginx ${USER_AUTHORIZATION_SERVER}@${IP_AUTHORIZATION_SERVER}:${REMOTE_AUTH_DIR}/nginx
 rm ${AUTH_DIR}/nginx/confs/authorization-server.conf
+rm ${AUTH_DIR}/nginx/confs/htpasswd_introspect
 echo "------------------------------------------------------"
 
 echo "------------------ remote copy user_data for authorization server------------------"
@@ -239,6 +241,7 @@ echo DNS_AUTHORIZATION_SERVER=${DNS_AUTHORIZATION_SERVER} >> .env_readonly
 echo DNS_RESOURCE_SERVER=${DNS_RESOURCE_SERVER} >> .env_readonly
 echo CLIENT_READONLY_CLIENT_ID=${CLIENT_READONLY_CLIENT_ID} >>.env_readonly
 echo CLIENT_READONLY_CLIENT_SECRET=${CLIENT_READONLY_CLIENT_SECRET} >>.env_readonly
+echo DNS_CLIENT_READONLY=${DNS_CLIENT_READONLY} >>.env_readonly
 
 echo "------------------------------------------------------"
 echo "------------------ generate CA gateway nginx for client readonly server ------------------"
@@ -295,6 +298,7 @@ echo DNS_AUTHORIZATION_SERVER=${DNS_AUTHORIZATION_SERVER} >> .env_write_and_read
 echo DNS_RESOURCE_SERVER=${DNS_RESOURCE_SERVER} >> .env_write_and_read
 echo CLIENT_WRITE_AND_READ_CLIENT_ID=${CLIENT_WRITE_AND_READ_CLIENT_ID} >>.env_write_and_read
 echo CLIENT_WRITE_AND_READ_CLIENT_SECRET=${CLIENT_WRITE_AND_READ_CLIENT_SECRET} >>.env_write_and_read
+echo DNS_CLIENT_WRITE_AND_READ=${DNS_CLIENT_WRITE_AND_READ} >>.env_write_and_read
 
 echo "------------------------------------------------------"
 echo "------------------ generate CA gateway nginx for client write and read server ------------------"

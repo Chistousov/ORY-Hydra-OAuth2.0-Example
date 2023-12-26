@@ -137,7 +137,7 @@ REPO_IMAGE="chistousov"
 
 IP_AUTHORIZATION_SERVER=192.168.0.101
 IP_RESOURCE_SERVER=192.168.0.104
-IP_CLIENT_READONLY=192.168.0.101
+IP_CLIENT_READONLY=192.168.0.102
 IP_CLIENT_WRITE_AND_READ=192.168.0.103
 
 DNS_AUTHORIZATION_SERVER=authorization-server.com
@@ -200,6 +200,23 @@ ping resource-server.com
 2. Так как пользоавтель не вошел в систему, то пользователя перебрасывает на <https://authorization-server.com/login> (Login Flow, аутентификация), потом на <https://authorization-server.com/consent> (Consent Flow, авторизация).
 3. Далее пользователь попадает обратно на <https://client-readonly.com>.
 4. Для получения данных OAuth 2.0 Client (Readonly) обращается на <https://resource-server.com> с access token.
+
+### Stop
+
+Останавливаем контейнеры с сохранением данных (volume).
+
+```bash
+bash stop.bash
+```
+
+### Stop and clean
+
+Останавливаем контейнеры и удаляем все данные(volume).
+
+```bash
+bash stop_and_clean.bash
+```
+
 
 ## Creators
 
